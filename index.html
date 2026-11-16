@@ -180,7 +180,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0d1a26;font-family:'B
 <details open><summary>🔄 Partie</summary><p>Efface tout et recommence à zéro : argent, terrains, bâtiments, voitures, fermes et missions. Tu repars à 10 h du matin.</p><button id="setreset">Recommencer à zéro</button></details>
 </div><button id="setx">Fermer</button></div></div>
 <div id="tip"></div>
-<button id="wood">💵<small>Bois</small></button>
+<button id="wood">💵</button>
 <div id="lock">
   <h1>Costa Ocre</h1>
   <div class="sub">prototype privé</div>
@@ -1607,7 +1607,7 @@ function startTwo(){const ids=[...ptrs.keys()],p=ids.map(k=>ptrs.get(k));two={id
 cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId);}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});ctrlRot=(e.pointerType==='mouse'&&(e.ctrlKey||e.metaKey)&&ptrs.size===1)?{x:e.clientX,y:e.clientY}:null;if(anim){anim=null;tgt.tx=cam.tx;tgt.tz=cam.tz;tgt.dist=cam.dist;}vel=[0,0];
   if(ctrlRot){drag=null;moved=true;}else if(ptrs.size===1){drag={x:e.clientX,y:e.clientY,t:performance.now()};moved=false;}else if(ptrs.size===2){startTwo();moved=true;}});
 cv.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;const prev=ptrs.get(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(ctrlRot&&ptrs.size===1){yawT+=(e.clientX-prev.x)*0.006;tgt.pitch=clamp(tgt.pitch-(e.clientY-prev.y)/H*120,CB.p0,CB.p1);return;}
+  if(ctrlRot&&ptrs.size===1){yawT+=(e.clientX-prev.x)*0.006;tgt.pitch=clamp(tgt.pitch+(e.clientY-prev.y)/H*120,CB.p0,CB.p1);return;}
   if(ptrs.size===2&&two){const p=two.ids.map(k=>ptrs.get(k));if(!p[0]||!p[1])return;const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),an=Math.atan2(p[1].y-p[0].y,p[1].x-p[0].x),my=(p[0].y+p[1].y)/2;
     let da=an-two.a;if(da>Math.PI)da-=2*Math.PI;if(da<-Math.PI)da+=2*Math.PI;
     if(!two.mode){const m0=[p[0].x-two.s[0].x,p[0].y-two.s[0].y],m1=[p[1].x-two.s[1].x,p[1].y-two.s[1].y];
@@ -1615,7 +1615,7 @@ cv.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;const pre
       if(big>9){const a0=Math.abs(m0[1]),a1=Math.abs(m1[1]);
         const tilt=m0[1]*m1[1]>0&&Math.min(a0,a1)>=0.3*Math.max(a0,a1)&&Math.abs(mvy)>=Math.max(pin,rot)*0.9&&Math.abs(mvy)>=Math.abs(mvx)*0.8;
         if(tilt)two.mode='tilt';else{two.mode='pr';two.d=d;two.a=an;two.my=my;two.dist=tgt.dist;two.yaw=yawT;two.pitch=tgt.pitch;}}}
-    else if(two.mode==='tilt'){tgt.pitch=clamp(two.pitch-(my-two.my)/H*120,CB.p0,CB.p1);}
+    else if(two.mode==='tilt'){tgt.pitch=clamp(two.pitch+(my-two.my)/H*120,CB.p0,CB.p1);}
     else{tgt.dist=rubber(two.dist*two.d/d,CB.d0,CB.d1,0.6);if(!two.rotOn&&Math.abs(da)>0.12){two.rotOn=true;two.a=an;two.yaw=yawT;da=0;}if(two.rotOn)yawT=two.yaw+da;}}
   else if(ptrs.size===1&&drag){if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>9)moved=true;if(moved){const m=panBy(e.clientX-prev.x,e.clientY-prev.y);const now=performance.now(),dtm=Math.max(8,now-drag.t)/1000;drag.t=now;vel=[lerp(vel[0],m[0]/dtm,0.4),lerp(vel[1],m[1]/dtm,0.4)];}}});
 function endPtr(e){if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ctrlRot){ctrlRot=null;if(ptrs.size===0){drag=null;two=null;}return;}
