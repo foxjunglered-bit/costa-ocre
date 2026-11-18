@@ -552,7 +552,7 @@ const PORTPOLY=(()=>{const [F,Bk]=QUAY;const n0=F.length-1;let nx=0,nz=0;for(let
   const arc=[];for(let t=1;t<16;t++){const u=t/16;arc.push([(1-u)*(1-u)*a[0]+2*(1-u)*u*c[0]+u*u*b[0],(1-u)*(1-u)*a[1]+2*(1-u)*u*c[1]+u*u*b[1]]);}
   return Bk.slice().concat([F[n0]],arc,[F[0]]);})();
 function segD(p,a,b){const dx=b[0]-a[0],dz=b[1]-a[1],l=dx*dx+dz*dz;let t=l?((p[0]-a[0])*dx+(p[1]-a[1])*dz)/l:0;t=clamp(t,0,1);return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dz);}
-function dpS(pts,tol){if(pts.length<3)return pts.slice();let md=0,mi=0;const a=pts[0],b=pts[pts.length-1];for(let k=1;k<pts.length-1;k++){const d=segD(pts[k],a,b);if(d>md){md=d;mi=k;}}if(md>tol){const l=dpS(pts.slice(0,mi+1),tol),r=dpS(pts.slice(mi),tol);return l.slice(0,-1).concat(r);}return[a,b];}
+function dpS(pts,tol){const n=pts.length;if(n<3)return pts.slice();const keep=new Uint8Array(n);keep[0]=1;keep[n-1]=1;const stack=[[0,n-1]];while(stack.length){const range=stack.pop(),a=range[0],b=range[1],pa=pts[a],pb=pts[b];let md=tol,mi=-1;for(let k=a+1;k<b;k++){const d=segD(pts[k],pa,pb);if(d>md){md=d;mi=k;}}if(mi!==-1){keep[mi]=1;stack.push([a,mi],[mi,b]);}}const out=[];for(let k=0;k<n;k++)if(keep[k])out.push(pts[k]);return out;}
 function traceLabel(cells,lab,arr){const E=new Map();const key=(x,y)=>x*4096+y;const add=(x0,y0,x1,y1)=>{const k=key(x0,y0);if(!E.has(k))E.set(k,[]);E.get(k).push([x1,y1]);};
   for(const c of cells){const a=c%PGW,b=(c/PGW)|0;const nb=(da,db)=>{const na=a+da,nb2=b+db;return na<0||nb2<0||na>=PGW||nb2>=PGH?0:arr[nb2*PGW+na];};
     if(nb(0,-1)!==lab)add(a,b,a+1,b);if(nb(1,0)!==lab)add(a+1,b,a+1,b+1);if(nb(0,1)!==lab)add(a+1,b+1,a,b+1);if(nb(-1,0)!==lab)add(a,b+1,a,b);}
