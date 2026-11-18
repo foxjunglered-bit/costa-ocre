@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 html,body{margin:0;height:100%;overflow:hidden;background:#0d1a26;font-family:'Baloo 2',system-ui,sans-serif;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
-#gl,#ui{position:fixed;inset:0;width:100%;height:100%;display:block}
+#gl,#ui{position:fixed;inset:0;width:100%;height:100%;display:block}#gl{z-index:0!important}#three-world{z-index:1!important}#ui{z-index:2}
 #ui{pointer-events:none}
 #hud{position:fixed;top:0;left:0;right:0;display:flex;gap:6px;padding:10px;flex-wrap:nowrap;pointer-events:none;z-index:40}
 .chip{background:rgba(24,17,9,.78);border:1px solid rgba(255,190,90,.4);border-radius:14px;padding:3px 11px;font-weight:700;font-size:15px;line-height:1.5;display:flex;align-items:center;gap:6px}
@@ -1835,6 +1835,13 @@ function t3Geometry(m,terrain=false){
   const all=[];for(let l=0;l<TEXN;l++){if(!by[l].length)continue;const start=all.length;all.push(...by[l]);g.addGroup(start,by[l].length,l);}
   g.setIndex(all);g.computeBoundingSphere();return g;
 }
+function t3SimpleWater(m,color,opacity){
+  if(!m||!m.cpuV||!m.cpuIx)return null;const a=m.cpuV,st=m.layout.reduce((q,x)=>q+x[1],0),n=a.length/st,pos=new Float32Array(n*3),uv=new Float32Array(n*2);
+  for(let k=0;k<n;k++){const o=k*st;pos[k*3]=a[o];pos[k*3+1]=a[o+1];pos[k*3+2]=a[o+2];uv[k*2]=st>=7?a[o+4]:0;uv[k*2+1]=st>=7?a[o+5]:0;}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(m.cpuIx);g.computeVertexNormals();
+  const mat=new THREE.MeshStandardMaterial({color,transparent:opacity<1,opacity,roughness:0.22,metalness:0.05,side:THREE.DoubleSide});
+  const obj=new THREE.Mesh(g,mat);obj.receiveShadow=true;return obj;
+}
 function t3MakeMesh(m,terrain=false){
   const geo=t3Geometry(m,terrain);if(!geo)return null;
   const mats=terrain?[T3.terrainMat]:T3.materials;
@@ -1866,6 +1873,7 @@ function initThreeRenderer(){
   T3.materials=tex.map((map)=>new T3.MeshStandardMaterial({map,vertexColors:true,roughness:0.88,metalness:0.0}));
   T3.terrainMat=new T3.MeshStandardMaterial({map:tex[TL.GRASS],vertexColors:true,roughness:1});
   const staticKeys=['ter','stat','bd','cad','farm'];for(const key of staticKeys){const m=MESH[key];if(!m)continue;const obj=t3MakeMesh(m,key==='ter');if(obj)T3world.add(obj);}
+  const sea=t3SimpleWater(MESH.sea,'#4d9eaa',0.78),river=t3SimpleWater(MESH.river,'#64b9bd',0.84);if(sea)T3world.add(sea);if(river)T3world.add(river);
   for(const b of BOATS){if(!b.mesh)continue;const obj=t3MakeMesh(b.mesh,false);if(obj){obj.position.set(b.i||b.ci||0,0,b.j||b.cj||0);obj.rotation.y=b.ry||0;T3world.add(obj);T3boats.push({b,obj});}}
   t3SyncBuildings();
   // Les arbres et arbustes sont reconstruits en volumes bas-polygones, plus de sprites plats.
