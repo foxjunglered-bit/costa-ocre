@@ -1223,8 +1223,13 @@ function church(mb){
   for(let k=0;k<20;k++){
     const a0=k/20*Math.PI*2,a1=(k+1)/20*Math.PI*2;
     mb.tri([roseX,roseY,doorZ],[roseX,roseY+Math.sin(a0)*rr,doorZ+Math.cos(a0)*rr],[roseX,roseY+Math.sin(a1)*rr,doorZ+Math.cos(a1)*rr],{l:TL.GLASS,c:C3(k%2?'#9fc8d7':'#d7e6e6'),em:0.35,out:[1,0,0]});
+    const r0=rr+0.015,r1=rr+0.075;
+    const p0=[roseX-0.018,roseY+Math.sin(a0)*r0,doorZ+Math.cos(a0)*r0];
+    const p1=[roseX-0.018,roseY+Math.sin(a1)*r0,doorZ+Math.cos(a1)*r0];
+    const q0=[roseX-0.018,roseY+Math.sin(a0)*r1,doorZ+Math.cos(a0)*r1];
+    const q1=[roseX-0.018,roseY+Math.sin(a1)*r1,doorZ+Math.cos(a1)*r1];
+    mb.quad(p0,p1,q1,q0,trim);
   }
-  mb.cyl(roseX+0.015,roseY,doorZ,0.39,0.39,0.045,20,trim);
   // Pilastres, corniche et fronton triangulaire
   for(const zz of [doorZ-0.82,doorZ+0.72]){
     mb.box(front+0.08,floor,zz-0.07,front+0.22,wallTop-0.08,zz+0.07,stone,null,0.22);
