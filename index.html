@@ -1290,7 +1290,7 @@ function buildHouse(B){if(B.special){buildSpecial(B);return;}
   }
   // Direction architecturale mediterraneenne : appliquer les details de facade a toutes les maisons evoluees.
   if(lv>=1){
-    const front=face(d,'+j'),stone=C3('#b9a184'),cream=C3('#f3e6cf'),wood=C3('#68452f'),iron=C3('#242b2a');
+    const front=face(d,'+j',i0,j0,i1,j1),stone=C3('#b9a184'),cream=C3('#f3e6cf'),wood=C3('#68452f'),iron=C3('#242b2a');
     // Socle en pierre avec joints horizontaux visibles.
     for(let k=0;k<5;k++){
       const yy=yb+0.05+k*0.105;
@@ -1649,15 +1649,16 @@ function t3Geometry(m,terrain=false){
   const pos=new Float32Array(count*3),nor=new Float32Array(count*3),col=new Float32Array(count*3),uv=new Float32Array(count*2),weights=terrain?new Float32Array(count*4):null;
   for(let k=0;k<count;k++){const o=k*st,p=k*3;pos[p]=a[o];pos[p+1]=a[o+1];pos[p+2]=a[o+2];nor[p]=a[o+3];nor[p+1]=a[o+4];nor[p+2]=a[o+5];col[p]=a[o+6];col[p+1]=a[o+7];col[p+2]=a[o+8];uv[k*2]=a[o+10];uv[k*2+1]=a[o+11];if(terrain)for(let q=0;q<4;q++)weights[k*4+q]=a[o+13+q];}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('normal',new THREE.BufferAttribute(nor,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
-  if(terrain){g.setAttribute('terrainWeights',new THREE.BufferAttribute(weights,4));g.setIndex(idx);g.addGroup(0,idx.length,0);g.computeBoundingSphere();return g;}
+  if(terrain){g.setAttribute('terrainWeights',new THREE.BufferAttribute(weights,4));g.setIndex(new THREE.BufferAttribute(idx,1));g.addGroup(0,idx.length,0);g.computeBoundingSphere();return g;}
   const by=Array.from({length:TEXN},()=>[]);for(let k=0;k<idx.length;k+=3){const lay=clamp(Math.round(a[idx[k]*st+12]),0,TEXN-1);by[lay].push(idx[k],idx[k+1],idx[k+2]);}
-  const all=[];for(let l=0;l<TEXN;l++){if(!by[l].length)continue;const start=all.length;all.push(...by[l]);g.addGroup(start,by[l].length,l);}
-  g.setIndex(all);g.computeBoundingSphere();return g;
+  const total=by.reduce((n,layer)=>n+layer.length,0),all=new Uint32Array(total);let offset=0;
+  for(let l=0;l<TEXN;l++){if(!by[l].length)continue;all.set(by[l],offset);g.addGroup(offset,by[l].length,l);offset+=by[l].length;}
+  g.setIndex(new THREE.BufferAttribute(all,1));g.computeBoundingSphere();return g;
 }
 function t3SimpleWater(m,color,opacity){
   if(!m||!m.cpuV||!m.cpuIx)return null;const a=m.cpuV,st=m.layout.reduce((q,x)=>q+x[1],0),n=a.length/st,pos=new Float32Array(n*3),uv=new Float32Array(n*2);
   for(let k=0;k<n;k++){const o=k*st;pos[k*3]=a[o];pos[k*3+1]=a[o+1];pos[k*3+2]=a[o+2];uv[k*2]=st>=7?a[o+4]:0;uv[k*2+1]=st>=7?a[o+5]:0;}
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(m.cpuIx);g.computeVertexNormals();
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(new THREE.BufferAttribute(m.cpuIx,1));g.computeVertexNormals();
   const mat=new THREE.MeshStandardMaterial({color,transparent:opacity<1,opacity,roughness:0.22,metalness:0.05,side:THREE.DoubleSide});
   const obj=new THREE.Mesh(g,mat);obj.receiveShadow=true;return obj;
 }
