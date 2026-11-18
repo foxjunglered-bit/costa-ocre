@@ -238,6 +238,16 @@ html,body{background:#14262c;color:#f6efe3}
  @keyframes ocre-breathe{0%,100%{filter:brightness(1)}50%{filter:brightness(1.09)}}
 }
 
+
+/* Bourse de Costa Ocre : jeton doré et libellé d'écus */
+#hud .wallet{display:flex;align-items:center;gap:9px;padding:7px 13px}
+#hud .coinmark{width:31px;height:31px;flex:0 0 31px;border-radius:50%;display:grid;place-items:center;font-family:Georgia,serif;font-weight:900;font-size:19px;color:#6d4317;background:radial-gradient(circle at 32% 28%,#fff1b9 0 13%,#eec56d 30%,#bf8236 68%,#f8d98a 72%,#9c6227 100%);border:2px solid #f4d58d;box-shadow:inset 0 0 0 2px #9c682c,0 2px 7px #0008}
+#hud .walletlabel{display:flex;flex-direction:column;line-height:1.1;gap:3px}
+#hud .walletlabel small{font-size:8px;letter-spacing:1.1px;font-weight:900;color:#d9b987}
+#money{font-variant-numeric:tabular-nums;font-size:16px;font-weight:900;letter-spacing:.2px}
+#devb{display:block!important}
+#dev .drow{flex-wrap:wrap}
+#dev .drow button{min-width:74px}
 </style>
 </head>
 <body>
@@ -245,7 +255,7 @@ html,body{background:#14262c;color:#f6efe3}
 <canvas id="ui"></canvas>
 <div id="vig"></div>
 <div id="hud">
-  <div class="chip"><span id="money">0 $</span> <span id="rate"></span></div>
+  <div class="chip wallet"><span class="coinmark" aria-hidden="true">C</span><span class="walletlabel"><small>TRÉSOR DE COSTA</small><span id="money">0 écus</span></span><span id="rate"></span></div>
   <div class="chip">🌿 <span class="bar"><i id="harm"></i></span></div>
   <div class="chip"><span id="clock"></span></div>
 </div>
@@ -265,7 +275,7 @@ html,body{background:#14262c;color:#f6efe3}
 <div id="dev"><div class="dh">Mode développeur <button id="devx">✕</button></div>
   <div class="dl">Heure : <b id="devht">08:00</b></div><input id="devh" type="range" min="0" max="1440" step="5" value="480">
   <div class="dl">Vitesse du temps</div><div class="drow"><button data-ts="1">×1</button><button data-ts="10">×10</button><button data-ts="60">×60</button><button data-ts="0">Pause</button></div>
-  <div class="dl">Argent</div><div class="drow"><button id="dm1">+100 000 $</button><button id="dm2">+1 M $</button></div>
+  <div class="dl">Argent</div><div class="drow"><button id="dm1">+100 000 $</button><button id="dm2">+1 M $</button><button id="dm3">+100 M $</button><button id="dm4">+1 Md $</button></div>
   <div class="dl">Tout débloquer (toutes les maisons au niveau…)</div><div class="drow"><button data-lv="1">1</button><button data-lv="2">2</button><button data-lv="3">3</button><button data-lv="4">4</button><button data-lv="0">0</button></div>
   <div class="drow"><button id="dtilt">Tilt-shift : ON</button></div>
   <div class="drow"><button id="dreset" style="background:#e85d3d;color:#fff">Remettre la partie à zéro</button></div></div>
@@ -1140,9 +1150,22 @@ function bridge(mb,s,w){
 function church(mb){const C=CHURCH,y0=hAt((C.i0+C.i1)/2,(C.j0+C.j1)/2)-0.3,h=1.75,st={l:TL.ASHLAR,c:C3('#f4e2c0')};
   mb.box(C.i0,y0,C.j0,C.i1,y0+0.3+h,C.j1,st,false,0.7);const yt=y0+0.3+h;
   // toit à deux pans (faîte selon i) en tuiles
-  const o=0.1,jm=(C.j0+C.j1)/2,rh=0.65;roof2(mb,C.i0-o,C.j0-o,C.i1+o,C.j1+o,yt,rh,true,{l:TL.TILE,c:[1,0.95,0.92]},st);
+  const o=0.18,jm=(C.j0+C.j1)/2,rh=0.78;roof2(mb,C.i0-o,C.j0-o,C.i1+o,C.j1+o,yt,rh,true,{l:TL.TILE,c:C3('#bd6545')},st);
+  // corniche en pierre, gouttières et bandeau de façade
+  mb.box(C.i0-0.12,yt-0.08,C.j0-0.12,C.i1+0.12,yt+0.06,C.j1+0.12,{l:TL.SLAB,c:C3('#ead9bb')},null,0.35);
+  mb.box(C.i0-0.13,y0+0.48,C.j0-0.13,C.i1+0.13,y0+0.58,C.j1+0.13,{l:TL.SLAB,c:C3('#d6c19c')},null,0.25);
   // façade (+i) : porte, rosace, pilastres
   const fx=C.i1+0.012;mb.quad([fx,y0+0.3,jm-0.22],[fx,y0+0.3,jm+0.22],[fx,y0+1.15,jm+0.22],[fx,y0+1.15,jm-0.22],{l:TL.DOOR,c:[0.9,0.8,0.7],out:[1,0,0]});
+  // portail provençal cintré en voussoirs, jambages et clé de voûte (géométrie réelle)
+  const doorW=0.54,doorB=y0+0.3,doorTop=y0+1.13,archR=doorW/2,front=C.i1+0.075;
+  mb.box(front-0.08,doorB,jm-doorW/2-0.12,front+0.08,doorTop,jm-doorW/2,{l:TL.SLAB,c:C3('#d9c7a7')},null,0.22);
+  mb.box(front-0.08,doorB,jm+doorW/2,front+0.08,doorTop,jm+doorW/2+0.12,{l:TL.SLAB,c:C3('#d9c7a7')},null,0.22);
+  for(let k=0;k<11;k++){const a0=Math.PI*k/11,a1=Math.PI*(k+1)/11,mid=(a0+a1)/2;
+    const p0=[front,doorTop+Math.sin(a0)*archR,jm+Math.cos(a0)*archR],p1=[front,doorTop+Math.sin(a1)*archR,jm+Math.cos(a1)*archR],pm=[front+0.04,doorTop+Math.sin(mid)*(archR+0.1),jm+Math.cos(mid)*(archR+0.1)];
+    mb.quad(p0,pm,p1,[front-0.05,pm[1],pm[2]],{l:TL.SLAB,c:C3(k===5?'#f3e5ca':'#d8c5a4'),out:[1,0,0]});}
+  mb.box(front+0.015,doorTop+archR-0.01,jm-0.055,front+0.11,doorTop+archR+0.12,jm+0.055,{l:TL.SLAB,c:C3('#f8e8c8')},null,0.2);
+  // deux colonnettes et chapiteaux
+  [jm-doorW/2-0.19,jm+doorW/2+0.13].forEach(z=>{mb.cyl(front+0.04,doorB+0.48,z,0.055,0.055,0.96,10,{l:TL.SLAB,c:C3('#e8d6b7')});mb.box(front-0.035,doorB+0.92,z-0.11,front+0.13,doorB+1.02,z+0.11,{l:TL.SLAB,c:C3('#f0dfc1')},null,0.2);});
   const rc=[fx+0.005,y0+1.55,jm];const rr=0.26;for(let k=0;k<16;k++){const a0=k/16*6.283,a1=(k+1)/16*6.283;mb.tri(rc,[rc[0],rc[1]+Math.sin(a0)*rr,rc[2]+Math.cos(a0)*rr],[rc[0],rc[1]+Math.sin(a1)*rr,rc[2]+Math.cos(a1)*rr],{l:TL.GLASS,c:C3('#c8d8f0'),em:1,out:[1,0,0],uv:[[0.5,0.5],[0.5+Math.cos(a0)*0.4,0.5+Math.sin(a0)*0.4],[0.5+Math.cos(a1)*0.4,0.5+Math.sin(a1)*0.4]]});}
   GLOWS.push([rc[0]+0.1,rc[1],rc[2],1.6,0.4,0.32,0.22]);
   [C.j0+0.05,jm-0.45,jm+0.35,C.j1-0.15].forEach(j=>mb.box(C.i1,y0+0.3,j,C.i1+0.06,yt,j+0.1,st,null,0.5));
@@ -1396,7 +1419,7 @@ function buildHouse(B){if(B.special){buildSpecial(B);return;}
   if(lv<=1){const along=(i1-i0)>=(j1-j0),rh=0.29,o=0.13,mat={l:TL.TILE,c:C3(['#c36b48','#d17d54','#b95f42','#d68a60'][B.idx%4])};
     // Remplacement du toit mono-pente par une vraie toiture a deux pans en volume.
     // Les pignons, les deux versants et le faitage sont des triangles/quads du maillage 3D.
-    roof2(mb,i0-o,j0-o,i1+o,j1+o,y1,rh,along,mat,{l:TL.PLASTER,c:facadeTint});
+    if(B.idx%3===0)roof4(mb,i0-o,j0-o,i1+o,j1+o,y1,rh,mat);else roof2(mb,i0-o,j0-o,i1+o,j1+o,y1,rh,along,mat,{l:TL.PLASTER,c:facadeTint});
     // Rives epaisses et debords visibles sur les quatre cotes.
     if(along){
       mb.box(i0-o-0.015,y1-0.025,j0-o-0.025,i1+o+0.015,y1+0.035,j0-o+0.035,{l:TL.TILE,c:C3('#8f4936')},null,0.18);
@@ -1846,7 +1869,7 @@ function update(dt){elapsed+=dt;if(farmDirty&&started){farmDirty=false;buildFarm
   if(star){star.x+=star.vx*dt;star.y+=star.vy*dt;star.life-=dt;if(star.life<=0)star=null;}
   if(anim){const u=Math.min(1,(performance.now()-anim.t0)/anim.dur),e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;cam.tx=lerp(anim.a.tx,anim.b.tx,e);cam.tz=lerp(anim.a.tz,anim.b.tz,e);cam.dist=lerp(anim.a.dist,anim.b.dist,e);tgt.tx=cam.tx;tgt.tz=cam.tz;tgt.dist=cam.dist;if(u>=1)anim=null;}
   hudT-=dt;if(hudT<=0){hudT=0.2;updateHud();updateSel();updateFlowers();misTick();}saveT-=dt;if(saveT<=0){saveT=5;save();}}
-function updateHud(){$('money').textContent=fmt(G.money)+' $';$('rate').textContent=totalRate>0?'+'+fmtS(totalRate*DAY)+' $/j':'';$('harm').style.width=harmony+'%';const h=Math.floor(G.t*24),m=Math.floor((G.t*24%1)*60);$('clock').textContent=(nightNow()?'🌙 ':'☀️ ')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+' · Jour '+G.day;}
+function updateHud(){$('money').textContent=fmt(G.money)+' écus';$('rate').textContent=totalRate>0?'+'+fmtS(totalRate*DAY)+' $/j':'';$('harm').style.width=harmony+'%';const h=Math.floor(G.t*24),m=Math.floor((G.t*24%1)*60);$('clock').textContent=(nightNow()?'🌙 ':'☀️ ')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+' · Jour '+G.day;}
 let fpsAcc=0,fpsN=0;
 function loop(ts){const raw=(ts-last)/1000||0.016;const dt=Math.min(0.05,raw);last=ts;ftEMA=lerp(ftEMA,raw*1000,0.06);adaptT+=dt;if(adaptT>0.9){adaptT=0;if(ftEMA>19&&rscale>0.55){rscale=Math.max(0.55,rscale-(ftEMA>28?0.2:0.1));resize();}else if(ftEMA<14.5&&rscale<1){rscale=Math.min(1,rscale+0.1);resize();}}update(dt);render();fpsAcc+=dt;fpsN++;if(fpsAcc>3){window._fps=fpsN/fpsAcc;fpsAcc=0;fpsN=0;}requestAnimationFrame(loop);}
 
@@ -2050,7 +2073,7 @@ $('ctrb').addEventListener('click',()=>{sel=null;savedCam=null;menuOpen=false;up
 
 /* ---------------- ACCÈS DÉVELOPPEUR PAR SCHÉMA ---------------- */
 const DEV_PATTERN_KEY='costaocre_dev_pattern_v1';
-const DEV_MODE=new URLSearchParams(location.search).get('dev')==='1';
+const DEV_MODE=true;
 let devTrace=[],devPointer=false;
 function devLockOpen(){
   devTrace=[];document.querySelectorAll('#devgrid button').forEach(b=>b.classList.remove('selected'));
@@ -2083,13 +2106,13 @@ document.addEventListener('pointermove',e=>{if(devPointer)devDotAt(e.clientX,e.c
 document.addEventListener('pointerup',()=>{if(devPointer)devFinishTrace();});
 $('devlockok').addEventListener('click',()=>{if(devPointer)devFinishTrace();else if(devTrace.length>=4)devFinishTrace();else $('devlockhint').textContent='Dessine d’abord un schéma d’au moins 4 points.';});
 $('devlockcancel').addEventListener('click',()=>{$('devlock').classList.remove('open');$('devlock').setAttribute('aria-hidden','true');});
-if(DEV_MODE){document.body.classList.add('dev-enabled');$('devb').addEventListener('click',devLockOpen);}
+document.body.classList.add('dev-enabled');
 /* ---------------- MODE DÉVELOPPEUR ---------------- */
 function devSync(){const m=Math.round(G.t*1440);$('devh').value=m;$('devht').textContent=String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');document.querySelectorAll('#dev [data-ts]').forEach(b=>b.classList.toggle('on',+b.dataset.ts===timeScale));}
 $('devb').addEventListener('click',()=>{$('dev').style.display='block';devSync();});$('devx').addEventListener('click',()=>{$('dev').style.display='none';});
 $('devh').addEventListener('input',e=>{G.t=(+e.target.value)/1440%1;devSync();shKey='';});
 document.querySelectorAll('#dev [data-ts]').forEach(b=>b.addEventListener('click',()=>{timeScale=+b.dataset.ts;devSync();}));
-$('dm1').addEventListener('click',()=>{G.money+=100000;updateHud();updateSel();});$('dm2').addEventListener('click',()=>{G.money+=1e6;updateHud();updateSel();});
+$('dm1').addEventListener('click',()=>{G.money+=100000;updateHud();updateSel();save();});$('dm2').addEventListener('click',()=>{G.money+=1e6;updateHud();updateSel();save();});$('dm3').addEventListener('click',()=>{G.money+=1e8;updateHud();updateSel();save();});$('dm4').addEventListener('click',()=>{G.money+=1e9;updateHud();updateSel();save();});
 function setAll(lv){BLD.forEach(B=>{if(B.special){B.owned=!!lv;B.lvl=lv?clamp(lv*2,1,10):1;}else if(lv){B.owned=true;if(!B.built){B.built=true;B.bt='modeste';}B.ruin=false;B.lvl=clamp(lv*2,1,10);}else{B.owned=!!B.home;const I=B.init||{};B.built=!!I.built;B.bt=I.bt||null;B.lvl=I.lvl||0;B.ruin=!!I.ruin;B.stash=0;B.spent=0;}if(B.home){B.built=true;B.bt='modeste';B.lvl=1;}buildHouse(B);});houseVer++;recompute();buildBillboards();buildGlows();updateHud();updateSel();save();toast(lv?'Tout acheté, niveau '+clamp(lv*2,1,10):'Tout remis en vente');}
 document.querySelectorAll('#dev [data-lv]').forEach(b=>b.addEventListener('click',()=>setAll(+b.dataset.lv)));
 $('dtilt').textContent='Tilt-shift : '+(tiltOn?'ON':'OFF');$('dtilt').addEventListener('click',()=>{tiltOn=!tiltOn;try{localStorage.setItem('costaocre_tilt',tiltOn?'1':'0');}catch(e){}$('dtilt').textContent='Tilt-shift : '+(tiltOn?'ON':'OFF');});
