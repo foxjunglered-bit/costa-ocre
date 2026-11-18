@@ -1192,6 +1192,54 @@ function buildHouse(B){if(B.special){buildSpecial(B);return;}
       for(let t=0;t<=8;t++){const q=F(lerp(a,b,t/8),yy,0.21);mb.box(q[0]-0.008,yy,q[2]-0.008,q[0]+0.008,yy+0.2,q[2]+0.008,{l:TL.WHITE,c:C3('#2a2018')},null,0.2);}
       const pf=F(s,yy,0.15);B.flowers.push([pf[0],pf[1],pf[2],'climb',0.2,1]);}
   }
+  // Maison prototype photorealiste : traitement special limite a une seule parcelle.
+  if(B.idx===0&&lv>=3&&!isShop(B)){
+    const front=face(d,'+j'),stone=C3('#b9a184'),cream=C3('#f3e6cf'),wood=C3('#68452f'),iron=C3('#242b2a');
+    // Socle en pierre avec joints horizontaux visibles.
+    for(let k=0;k<5;k++){
+      const yy=yb+0.05+k*0.105;
+      frect(mb,front,0,1,yy,yy+0.075,0.026,{l:TL.RSTONE,c:k%2?stone:C3('#c9b394')},'+j');
+    }
+    // Bandeau moulure sous la toiture et pierres d'angle plus épaisses.
+    frect(mb,front,0,1,y1-0.13,y1-0.075,0.055,{l:TL.SLAB,c:cream},'+j');
+    for(const u of [0.035,0.965]){
+      for(let k=0;k<Math.ceil((y1-y0)/0.24);k++){
+        const yy=y0-0.48+k*0.24;
+        frect(mb,front,u-0.025,u+0.025,yy,yy+0.19,0.065,{l:TL.RSTONE,c:k%2?stone:C3('#d2bea0')},'+j');
+      }
+    }
+    // Auvent d'entree en bois, console et petite marquise de tuiles.
+    const doorS=0.5,canopyY=y0+FH*0.88,canopy=front(doorS,canopyY,0.22);
+    mb.box(canopy[0]-0.43,canopyY-0.035,canopy[2]-0.34,canopy[0]+0.43,canopyY+0.025,canopy[2]+0.02,{l:TL.WOOD,c:wood},null,0.22);
+    for(const dx of [-0.31,0.31]){
+      const c=front(doorS+dx/(j1-j0),canopyY-0.04,0.19);
+      mb.box(c[0]-0.035,c[1]-0.18,c[2]-0.035,c[0]+0.035,c[1]+0.015,c[2]+0.035,{l:TL.WOOD,c:wood},null,0.18);
+    }
+    // Balcon en fer forge avec main courante et barreaux fins.
+    if(fl>=2){
+      const center=front(0.5,y0+FH*1.48,0.15),width=Math.min(0.82,(j1-j0)*0.72);
+      mb.box(center[0]-width/2,center[1]-0.045,center[2]-0.32,center[0]+width/2,center[1]+0.015,center[2]+0.03,{l:TL.SLAB,c:cream},null,0.24);
+      mb.box(center[0]-width/2,center[1]+0.49,center[2]-0.29,center[0]+width/2,center[1]+0.53,center[2]-0.25,{l:TL.WOOD,c:iron},null,0.14);
+      for(let k=0;k<=10;k++){
+        const x=center[0]-width/2+width*k/10;
+        mb.box(x-0.012,center[1]+0.02,center[2]-0.29,x+0.012,center[1]+0.5,center[2]-0.25,{l:TL.WOOD,c:iron},null,0.1);
+      }
+      for(const side of [-1,1]){
+        const x=center[0]+side*width/2;
+        mb.box(x-0.018,center[1]+0.015,center[2]-0.31,x+0.018,center[1]+0.51,center[2]-0.23,{l:TL.WOOD,c:iron},null,0.1);
+      }
+    }
+    // Volets provençaux en bois à lames, appliqués sur les fenêtres de la façade.
+    for(let k=0;k<Math.max(2,Math.floor((j1-j0)*1.35));k++){
+      const u=(k+0.5)/Math.max(2,Math.floor((j1-j0)*1.35));
+      const yy=y0+FH*0.43, p=front(u,yy,0.105);
+      for(const side of [-1,1]){
+        const x=p[0]+side*0.105;
+        mb.box(x-0.045,yy-0.18,p[2]-0.025,x+0.045,yy+0.18,p[2]+0.025,{l:TL.SHUT,c:C3('#526b63')},null,0.18);
+        for(let sl=0;sl<5;sl++)mb.box(x-0.038,yy-0.14+sl*0.067,p[2]+0.027,x+0.038,yy-0.12+sl*0.067,p[2]+0.034,{l:TL.WOOD,c:wood},null,0.08);
+      }
+    }
+  }
   if(isShop(B))shopExtras(mb,B,d,i0,j0,i1,j1,y0,FH);if(B.dealer)dealerLot(mb,B,d,i0,j0,i1,j1,y0);if(isShop(B)){}else if(B.built&&(!B.home||B.lvl>=3))houseAccents(mb,B,d,i0,j0,i1,j1,y0,FH,lv);
   if(lv>=2){[[i0-0.035,j0-0.035,i1+0.035,j1+0.035]].forEach(b=>mb.box(b[0],y1-0.07,b[1],b[2],y1,b[3],{l:TL.SLAB,c:C3(lv===3?'#efe2c4':'#bba88a')},false,0.3));
     if(lv>=3)mb.box(i0-0.03,y0-0.6,j0-0.03,i1+0.03,y0+0.12,j1+0.03,{l:TL.RSTONE,c:[0.95,0.9,0.85]},false,0.5);
