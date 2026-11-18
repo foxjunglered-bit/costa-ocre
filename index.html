@@ -144,6 +144,32 @@ body.dev-enabled #devb{display:block}
 #devlock .lockactions{display:flex;gap:8px}
 #devlock .lockactions button{flex:1;border:0;border-radius:10px;padding:11px;background:#ffc23d;color:#1c140b;font-weight:800}
 #devlock .lockactions button.secondary{background:#554638;color:#fff}
+
+/* ---------------- DIRECTION ARTISTIQUE : COSTA OCRE / EDITION ---------------- */
+:root{color-scheme:dark}
+html,body{background:#172a32;color:#f8f1e6;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+#hud .chip{background:linear-gradient(145deg,rgba(29,48,53,.94),rgba(17,31,37,.92));border:1px solid rgba(235,202,151,.28);border-radius:12px;box-shadow:0 5px 18px #07151b55;backdrop-filter:blur(12px);color:#f4ead8}
+#money{color:#f2c879;text-shadow:0 1px 10px #d48b3c44}
+#rate{color:#a8d6b0}
+#act,#bmbuy,#newsok,#setx,#infox{background:linear-gradient(135deg,#e9bd78,#d98e55);color:#2d2119;box-shadow:0 3px 0 #965b38,0 9px 22px #07151b66;border-radius:14px}
+#wood,#bcol,#bmcol{background:linear-gradient(145deg,#8da98a,#527d70);color:#f8f1e6;box-shadow:0 3px 0 #35584e,0 9px 22px #07151b66}
+#bm,#dev{background:rgba(24,39,43,.96);border:1px solid rgba(232,196,143,.34);box-shadow:0 18px 50px #061217aa;backdrop-filter:blur(18px);border-radius:18px}
+#bm .n,#dev .dh,#news .t,#infop .t,#setp .t{color:#f0c98e}
+#bm .l,#bmb .bh,#info .l{color:#d8a46d}
+#bmb .bopt{background:rgba(245,231,207,.07);border-color:rgba(232,196,143,.2);border-radius:12px}
+#map,#infop,#setp{background:rgba(9,22,27,.94);backdrop-filter:blur(14px)}
+#mapx,#mapctr,#bmx,#dev .dh button{background:#31484a;color:#f8f1e6;border:1px solid #78908a55}
+#toast,#info,#mis{background:rgba(22,39,42,.92);border:1px solid rgba(232,196,143,.25);backdrop-filter:blur(12px);color:#f7eddf}
+#info .n{color:#f0c98e}
+#vig{background:radial-gradient(ellipse at 50% 42%,rgba(0,0,0,0) 52%,rgba(17,31,30,.22) 100%)}
+#lock{background:radial-gradient(circle at 50% 22%,#688b83 0%,#294b4d 48%,#12272e 100%)}
+#lock h1{color:#f3d4a3;text-shadow:0 2px 0 #80583e}
+#lock .sub,#loading{color:#d3e1d6}
+#phone{background:#172a32;border-color:#40565a}
+#phbody{background:linear-gradient(160deg,#29454a,#172c33)}
+.card{background:rgba(245,231,207,.08);border:1px solid rgba(232,196,143,.12)}
+.card .amt{color:#f0c98e}
+#tip{background:#f4ead8;color:#283337}
 </style>
 </head>
 <body>
@@ -684,7 +710,7 @@ const gl=cv.getContext('webgl2',{antialias:true,alpha:false,powerPreference:'hig
 const LIGHT=`
 uniform vec3 uSunDir,uSunCol,uSky,uGnd,uFog,uCam;uniform float uFogN,uFogF,uNight;
 uniform highp sampler2DShadow uShadow;uniform float uSMt,uExpo;
-vec3 grade(vec3 c){c*=uExpo;vec3 a=clamp((c*(2.51*c+0.03))/(c*(2.43*c+0.59)+0.14),0.0,1.0);float l=dot(a,vec3(0.299,0.587,0.114));a=mix(vec3(l),a,1.06);a=a*a*(3.0-2.0*a)*0.22+a*0.78;return a*vec3(1.04,1.0,0.92);}
+vec3 grade(vec3 c){c*=uExpo*1.08;vec3 a=clamp((c*(2.51*c+0.03))/(c*(2.43*c+0.59)+0.14),0.0,1.0);float l=dot(a,vec3(0.2126,0.7152,0.0722));a=mix(vec3(l),a,1.14);a=mix(a,a*vec3(1.045,1.015,0.965),0.62);a=pow(max(a,vec3(0.0)),vec3(0.94));return clamp(a,0.0,1.0);}
 vec3 pert(vec3 N,vec3 p,vec2 uv,vec3 tn){vec3 q1=dFdx(p),q2=dFdy(p);vec2 s1=dFdx(uv),s2=dFdy(uv);vec3 q2p=cross(q2,N),q1p=cross(N,q1);vec3 T=q2p*s1.x+q1p*s2.x,B=q2p*s1.y+q1p*s2.y;float d=max(dot(T,T),dot(B,B));if(d<1e-14)return N;float iv=inversesqrt(d);return normalize(mat3(T*iv,B*iv,N)*tn);}
 float shadowF(vec4 lp){vec3 p=lp.xyz/lp.w*0.5+0.5;if(p.x<=0.0||p.x>=1.0||p.y<=0.0||p.y>=1.0||p.z>=1.0)return 1.0;float t=uSMt,b=p.z-0.0008;
  return (texture(uShadow,vec3(p.xy+vec2(-t,-t),b))+texture(uShadow,vec3(p.xy+vec2(t,-t),b))+texture(uShadow,vec3(p.xy+vec2(-t,t),b))+texture(uShadow,vec3(p.xy+vec2(t,t),b)))*0.25;}
@@ -717,7 +743,7 @@ precision highp float;precision highp sampler2DArray;
 in vec3 vP,vN;in vec4 vC,vL,vW;in vec3 vT;uniform sampler2DArray uTex,uNrm;${LIGHT}
 out vec4 o;
 void main(){vec3 N=normalize(vN);vec4 tx=texture(uTex,vT);vec3 tn=texture(uNrm,vT).xyz*2.0-1.0;vec3 n=pert(N,vP,vT.xy,tn);vec3 alb=tx.rgb*vC.rgb;float dd=1.0-smoothstep(4.0,15.0,length(uCam-vP));alb*=mix(1.0,texture(uTex,vec3(vT.xy*4.3,20.0)).r*2.0,0.32*dd);
- float nd=max(dot(n,uSunDir),0.0);float s=shadowF(vL);vec3 amb=mix(uGnd,uSky,n.y*0.5+0.5);vec3 c=alb*(amb+uSunCol*nd*s);vec3 v=normalize(uCam-vP);
+ float nd=max(dot(n,uSunDir),0.0);float s=shadowF(vL);vec3 amb=mix(uGnd*0.88,uSky*1.12,n.y*0.5+0.5);vec3 c=alb*(amb+uSunCol*nd*s*1.12);vec3 v=normalize(uCam-vP);float rough=clamp(0.82-vC.r*0.10,0.58,0.88);float spec=pow(max(dot(reflect(-uSunDir,n),v),0.0),mix(18.0,64.0,1.0-rough));c+=uSunCol*spec*s*(1.0-rough)*0.24;
  if(abs(vT.z-11.0)<0.5){float fr=pow(1.0-max(dot(N,v),0.0),2.0);c=mix(c,uSky*1.5+uFog*0.35,0.18+0.4*fr);c+=uSunCol*pow(max(dot(reflect(-uSunDir,N),v),0.0),70.0)*s*1.4;}
  else c+=uSunCol*pow(max(dot(reflect(-uSunDir,n),v),0.0),20.0)*s*0.05;
  if(vC.a>0.5){float on=winOn(vC.a<1.005?-1.0:vC.a-1.0);vec3 em=vec3(1.0,0.66,0.32)*mix(0.95,0.3,smoothstep(0.55,0.85,tx.r));c=mix(c,em,uNight*0.82*on);}
@@ -1516,7 +1542,7 @@ function updateLight(){const t=G.t;let k=0;while(k<SUNK.length-2&&t>SUNK[k+1][0]
   const sunF=sm(-3,12,elD),moonF=1-sm(-6,6,elD);const el=Math.max(elD,6)*Math.PI/180,hz=nrm([lerp(-1,0.35,dc),0,lerp(0.25,1,dc)]);
   const sdir=nrm([hz[0]*Math.cos(el),Math.sin(el),hz[2]*Math.cos(el)]),mdir=nrm([0.35,0.8,0.5]);const ws=sunF/(sunF+moonF*(1-sunF)+1e-4);
   const dir=nrm(sdir.map((v,q)=>lerp(mdir[q],v,ws)));const mc=[0.2,0.26,0.44];L.sunCol=sc.map((v,q)=>v*0.84*sunF+mc[q]*moonF*(1-sunF));
-  L.sun=dir;L.sky=sky.map(v=>v*0.5);L.gnd=gnd.map(v=>v*0.4);L.fog=fog;}
+  L.sun=dir;L.sky=sky.map(v=>v*0.58);L.gnd=gnd.map(v=>v*0.46);L.fog=fog;}
 function updateCamera(){const p=cam.pitch*Math.PI/180,cp=Math.cos(p);cam.ty=lerp(cam.ty,Math.max(0.3,hAt(cam.tx,cam.tz)),0.1);const tgt=[cam.tx,cam.ty,cam.tz];
   eye=[cam.tx+cam.dist*cp*Math.sin(cam.yaw),cam.ty+cam.dist*Math.sin(p),cam.tz+cam.dist*cp*Math.cos(cam.yaw)];{const gh=Math.max(0,hAt(eye[0],eye[2]))+2.3;if(eye[1]<gh)eye[1]=lerp(eye[1],gh,1);}
   const V=lookAt(eye,tgt,[0,1,0]);const Pm=persp(cam.fov*Math.PI/180,W/H,Math.max(0.5,cam.dist*0.12),1400);VP=mmul(Pm,V);iVP=minv(VP);
