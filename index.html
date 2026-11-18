@@ -319,6 +319,7 @@ html,body{background:#14262c;color:#f6efe3}
     <button id="fno">Annuler</button></div>
 </div>
 <div id="loading">Préparation du village…</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
 'use strict';
 /* =====================================================================
@@ -929,7 +930,7 @@ const LAY3=[[0,3],[1,3],[2,4],[3,3]],LAYT=[[0,3],[1,3],[2,4],[3,3],[4,4]];
 function upload(v,ix,layout){const vao=gl.createVertexArray();gl.bindVertexArray(vao);const vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(v),gl.STATIC_DRAW);
   const st=layout.reduce((a,l)=>a+l[1],0)*4;let off=0;for(const [loc,sz] of layout){gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,sz,gl.FLOAT,false,st,off);off+=sz*4;}
   if(layout.length===4){gl.disableVertexAttribArray(4);gl.vertexAttrib4f(4,1,0,0,0);}
-  const ib=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint32Array(ix),gl.STATIC_DRAW);gl.bindVertexArray(null);return{vao,vb,ib,n:ix.length};}
+  const ib=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint32Array(ix),gl.STATIC_DRAW);gl.bindVertexArray(null);return{vao,vb,ib,n:ix.length,cpuV:new Float32Array(v),cpuIx:new Uint32Array(ix),layout};}
 function freeMesh(m){if(!m)return;gl.deleteVertexArray(m.vao);gl.deleteBuffer(m.vb);gl.deleteBuffer(m.ib);}
 const mbUp=mb=>upload(mb.v,mb.ix,mb.ter?LAYT:LAY3);
 
@@ -1753,13 +1754,13 @@ function buildGlows(){const all=GLOWS.slice();[...BLD,...DECO].forEach(B=>(B.glo
   gl.bindBuffer(gl.ARRAY_BUFFER,GLB.b);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);glCount=all.length;}
 
 /* ---------------- RESSOURCES GPU ---------------- */
-let shFr=0,shSun=[0,0,0];let texArr,nrmArr,atlasTex,shadowTex,shadowFB,SM=2048,shKey='',houseVer=0,shC=[0,0,0],shHS=10;let MESH={};
+let THREE_TEX_PIXELS=null,shFr=0,shSun=[0,0,0];let texArr,nrmArr,atlasTex,shadowTex,shadowFB,SM=2048,shKey='',houseVer=0,shC=[0,0,0],shHS=10;let MESH={};
 function initGL(){
   P.mesh=prog(VS_MESH,FS_MESH);P.ter=prog(VS_MESH,FS_TER);P.sh=prog(VS_SH,FS_SH);P.bb=prog(VS_BB,FS_BB);P.bbsh=prog(VS_BB,FS_BBSH);P.w=prog(VS_W,FS_W);P.gl=prog(VS_GL,FS_GL);P.sky=prog(VS_SKY,FS_SKY);P.pm=prog(`#version 300 es
 layout(location=0) in vec3 aP;uniform mat4 uVP;out vec2 vX;void main(){vX=aP.xz;gl_Position=uVP*vec4(aP,1.0);}`,`#version 300 es
 precision highp float;in vec2 vX;uniform vec2 uPoly[180];uniform int uN;out vec4 o;
 void main(){bool c=false;for(int a=0,b=0;a<180;a++){if(a>=uN)break;b=a==0?uN-1:a-1;vec2 p=uPoly[a],q=uPoly[b];if(((p.y>vX.y)!=(q.y>vX.y))&&(vX.x<(q.x-p.x)*(vX.y-p.y)/(q.y-p.y)+p.x))c=!c;}if(!c)discard;o=vec4(1.0);}`);
-  texArr=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,texArr);gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,gl.RGBA8,TS,TS,TEXN,0,gl.RGBA,gl.UNSIGNED_BYTE,genTextures());
+  THREE_TEX_PIXELS=genTextures();texArr=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,texArr);gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,gl.RGBA8,TS,TS,TEXN,0,gl.RGBA,gl.UNSIGNED_BYTE,THREE_TEX_PIXELS);
   gl.generateMipmap(gl.TEXTURE_2D_ARRAY);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);
   const an=gl.getExtension('EXT_texture_filter_anisotropic');if(an)gl.texParameterf(gl.TEXTURE_2D_ARRAY,an.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(4,gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
   nrmArr=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,nrmArr);gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,gl.RGBA8,TS,TS,TEXN,0,gl.RGBA,gl.UNSIGNED_BYTE,NRM_DATA);NRM_DATA=null;
@@ -1818,7 +1819,78 @@ function drawBB(pr,right,up,mVP){gl.useProgram(pr.p);if(pr===P.bb)setCommon(pr);
       if(w>0.5){const r=4.5/(w*th);if(Math.abs(x/w)>1+r/asp||Math.abs(y/w)>1+r)continue;}}}
     const off=ch.s*40;gl.vertexAttribPointer(1,3,gl.FLOAT,false,40,off);gl.vertexAttribPointer(2,3,gl.FLOAT,false,40,off+12);gl.vertexAttribPointer(3,4,gl.FLOAT,false,40,off+24);gl.drawArraysInstanced(gl.TRIANGLES,0,6,ch.n);}
   if(BBF&&FLW.length&&(!sh||WT.length)){gl.bindVertexArray(BBF.vao);gl.drawArraysInstanced(gl.TRIANGLES,0,6,sh?WT.length:FLW.length);}}
+
+/* ---------------- NOUVEAU RENDU THREE.JS ----------------
+   Le monde et sa logique sont conservés, mais le rendu final passe
+   par Three.js : matériaux PBR, éclairage physique et ombres douces. */
+let T3=null,T3scene=null,T3camera=null,T3renderer=null,T3world=null,T3buildings=new Map(),T3boats=[];
+function t3Geometry(m,terrain=false){
+  if(!m||!m.cpuV||!m.cpuIx)return null;
+  const a=m.cpuV,idx=m.cpuIx,st=m.layout.reduce((q,x)=>q+x[1],0),count=a.length/st;
+  const pos=new Float32Array(count*3),nor=new Float32Array(count*3),col=new Float32Array(count*3),uv=new Float32Array(count*2);
+  for(let k=0;k<count;k++){const o=k*st,p=k*3;pos[p]=a[o];pos[p+1]=a[o+1];pos[p+2]=a[o+2];nor[p]=a[o+3];nor[p+1]=a[o+4];nor[p+2]=a[o+5];col[p]=a[o+6];col[p+1]=a[o+7];col[p+2]=a[o+8];uv[k*2]=a[o+10];uv[k*2+1]=a[o+11];}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('normal',new THREE.BufferAttribute(nor,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+  if(terrain){g.setIndex(idx);g.addGroup(0,idx.length,0);g.computeBoundingSphere();return g;}
+  const by=Array.from({length:TEXN},()=>[]);for(let k=0;k<idx.length;k+=3){const lay=clamp(Math.round(a[idx[k]*st+12]),0,TEXN-1);by[lay].push(idx[k],idx[k+1],idx[k+2]);}
+  const all=[];for(let l=0;l<TEXN;l++){if(!by[l].length)continue;const start=all.length;all.push(...by[l]);g.addGroup(start,by[l].length,l);}
+  g.setIndex(all);g.computeBoundingSphere();return g;
+}
+function t3MakeMesh(m,terrain=false){
+  const geo=t3Geometry(m,terrain);if(!geo)return null;
+  const mats=terrain?[T3.terrainMat]:T3.materials;
+  const obj=new THREE.Mesh(geo,mats);obj.castShadow=!terrain;obj.receiveShadow=true;return obj;
+}
+function t3SyncBuildings(){
+  const active=new Set();
+  for(const B of [...BLD,...DECO]){if(!B.mesh)continue;active.add(B);const old=T3buildings.get(B);
+    if(old&&old.source===B.mesh)continue;
+    if(old){T3world.remove(old.obj);old.obj.geometry.dispose();}
+    const obj=t3MakeMesh(B.mesh,false);if(obj){T3world.add(obj);T3buildings.set(B,{source:B.mesh,obj});}}
+  for(const [B,v] of T3buildings)if(!active.has(B)){T3world.remove(v.obj);v.obj.geometry.dispose();T3buildings.delete(B);}
+}
+function initThreeRenderer(){
+  if(!window.THREE)throw new Error('Three.js ne s’est pas chargé');
+  T3=THREE;const canvas=document.createElement('canvas');canvas.id='three-world';canvas.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none';
+  document.body.insertBefore(canvas,ui);
+  T3renderer=new T3.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+  T3renderer.setPixelRatio(Math.min(1.5,window.devicePixelRatio||1));T3renderer.outputColorSpace=T3.SRGBColorSpace;T3renderer.toneMapping=T3.ACESFilmicToneMapping;T3renderer.toneMappingExposure=1.18;
+  T3renderer.shadowMap.enabled=true;T3renderer.shadowMap.type=T3.PCFSoftShadowMap;
+  T3scene=new T3.Scene();T3scene.background=new T3.Color('#b9c9c5');T3scene.fog=new T3.Fog('#c5d0bd',48,145);
+  T3camera=new T3.PerspectiveCamera(cam.fov,innerWidth/innerHeight,0.35,1400);
+  T3world=new T3.Group();T3scene.add(T3world);
+  const hemi=new T3.HemisphereLight('#fff3d9','#8d886b',1.45);T3scene.add(hemi);
+  const sun=new T3.DirectionalLight('#fff0d7',3.0);sun.position.set(-34,58,26);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-75;sun.shadow.camera.right=75;sun.shadow.camera.top=75;sun.shadow.camera.bottom=-75;sun.shadow.bias=-0.00018;sun.shadow.normalBias=0.025;sun.shadow.radius=4;T3scene.add(sun);
+  const fill=new T3.DirectionalLight('#c6dcff',0.55);fill.position.set(35,22,-35);T3scene.add(fill);
+  const px=THREE_TEX_PIXELS;
+  const tex=[];for(let l=0;l<TEXN;l++){const c=document.createElement('canvas');c.width=TS;c.height=TS;const x=c.getContext('2d'),im=x.createImageData(TS,TS),off=l*TS*TS*4;im.data.set(px.subarray(off,off+TS*TS*4));x.putImageData(im,0,0);const t=new T3.CanvasTexture(c);t.colorSpace=T3.SRGBColorSpace;t.wrapS=t.wrapT=T3.RepeatWrapping;t.anisotropy=Math.min(8,T3renderer.capabilities.getMaxAnisotropy());tex.push(t);}
+  T3.materials=tex.map((map)=>new T3.MeshStandardMaterial({map,vertexColors:true,roughness:0.88,metalness:0.0}));
+  T3.terrainMat=new T3.MeshStandardMaterial({map:tex[TL.GRASS],vertexColors:true,roughness:1});
+  const staticKeys=['ter','stat','bd','cad','farm'];for(const key of staticKeys){const m=MESH[key];if(!m)continue;const obj=t3MakeMesh(m,key==='ter');if(obj)T3world.add(obj);}
+  for(const b of BOATS){if(!b.mesh)continue;const obj=t3MakeMesh(b.mesh,false);if(obj){obj.position.set(b.i||b.ci||0,0,b.j||b.cj||0);obj.rotation.y=b.ry||0;T3world.add(obj);T3boats.push({b,obj});}}
+  t3SyncBuildings();
+  // Les arbres et arbustes sont reconstruits en volumes bas-polygones, plus de sprites plats.
+  const vegMat=new T3.MeshStandardMaterial({color:'#668e4d',roughness:1});
+  const trunkMat=new T3.MeshStandardMaterial({color:'#765239',roughness:1});
+  const coneGeo=new T3.ConeGeometry(0.48,1.25,7);const ballGeo=new T3.IcosahedronGeometry(0.62,1);const trunkGeo=new T3.CylinderGeometry(0.075,0.11,0.8,7);
+  const treeGroup=new T3.Group();T3world.add(treeGroup);
+  for(let k=0;k<vegList.length;k++){const v=vegList[k],x=v[0],y=v[1],z=v[2],scale=clamp(v[4]||1,0.45,1.8);if(v[4]<0.35)continue;
+    const trunk=new T3.Mesh(trunkGeo,trunkMat);trunk.position.set(x,y+0.38*scale,z);trunk.scale.setScalar(scale);trunk.castShadow=true;treeGroup.add(trunk);
+    if(k%3===0){for(let q=0;q<3;q++){const leaf=new T3.Mesh(coneGeo,vegMat);leaf.position.set(x,y+(0.9+q*0.42)*scale,z);leaf.scale.set(scale*(1-q*.12),scale,scale*(1-q*.12));leaf.castShadow=true;treeGroup.add(leaf);}}
+    else{const leaf=new T3.Mesh(ballGeo,vegMat);leaf.position.set(x,y+1.15*scale,z);leaf.scale.set(scale*1.25,scale,scale*1.15);leaf.castShadow=true;treeGroup.add(leaf);}
+  }
+  T3renderer.setSize(innerWidth,innerHeight,false);cv.style.opacity='0';T3.ready=true;
+}
+function renderThree(){
+  if(!T3||!T3.ready)return;
+  updateLight();updateCamera();t3SyncBuildings();
+  T3camera.fov=cam.fov;T3camera.aspect=W/H;T3camera.position.set(eye[0],eye[1],eye[2]);T3camera.up.set(0,1,0);T3camera.lookAt(cam.tx,cam.ty,cam.tz);T3camera.updateProjectionMatrix();T3camera.updateMatrixWorld(true);
+  VP=mmul(new Float32Array(T3camera.projectionMatrix.elements),new Float32Array(T3camera.matrixWorldInverse.elements));iVP=minv(VP);
+  camRight=[T3camera.matrixWorld.elements[0],T3camera.matrixWorld.elements[1],T3camera.matrixWorld.elements[2]];camUp=[T3camera.matrixWorld.elements[4],T3camera.matrixWorld.elements[5],T3camera.matrixWorld.elements[6]];
+  T3renderer.render(T3scene,T3camera);
+}
+
 function render(){
+  if(T3&&T3.ready){renderThree();drawUI();return;}
   updateLight();updateCamera();
   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D_ARRAY,texArr);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D_ARRAY,nrmArr);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,atlasTex);
   // ombres
@@ -2350,7 +2422,7 @@ let showNews=false;setTimeout(()=>{const b=$('newsok');if(b)b.addEventListener('
 let hiddenAt=0;document.addEventListener('visibilitychange',()=>{if(document.hidden){save();hiddenAt=Date.now();}else hiddenAt=0;});
 let toastT=null;function toast(m){const t=$('toast');t.textContent=m;t.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>t.style.opacity=0,2800);}
 let rscale=1,ftEMA=16,adaptT=0,udpr=1;
-function resize(){const base=Math.min(1.75,window.devicePixelRatio||1);udpr=base;dpr=Math.max(0.8,base*rscale);W=innerWidth;H=innerHeight;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ui.width=Math.round(W*udpr);ui.height=Math.round(H*udpr);}
+function resize(){const base=Math.min(1.75,window.devicePixelRatio||1);udpr=base;dpr=Math.max(0.8,base*rscale);W=innerWidth;H=innerHeight;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);ui.width=Math.round(W*udpr);ui.height=Math.round(H*udpr);if(T3renderer){T3renderer.setSize(W,H,false);T3renderer.setPixelRatio(dpr);if(T3camera){T3camera.aspect=W/H;T3camera.updateProjectionMatrix();}}}
 addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,250));if(window.visualViewport)visualViewport.addEventListener('resize',resize);
 
 /* ---------------- VERROU (schéma) ---------------- */
@@ -2381,7 +2453,7 @@ let ready=false,unlocked=false;
 /* ---------------- DÉMARRAGE ---------------- */
 let started=false;
 function prepare(){if(!gl){$('loading').textContent='Ton navigateur ne gère pas la 3D (WebGL2). Mets à jour ton téléphone ou essaie Chrome/Safari récent.';return;}
-  resize();load();initGL();ready=true;$('loading').style.display='none';if(unlocked)startGame();}
+  resize();load();initGL();initThreeRenderer();ready=true;$('loading').style.display='none';if(unlocked)startGame();}
 setTimeout(()=>{try{prepare();}catch(e){$('loading').textContent='Erreur : '+e.message;console.error(e);}},50);
 function startGame(){if(!ready||started)return;started=true;setTimeout(newsPop,1200);setTimeout(infoAuto,1500);resize();recompute();BLD.forEach(B=>{if(B.meshLv!==B.lvl)buildHouse(B);});buildBillboards();buildGlows();{const C=CHURCH;CAM0.tx=cam.tx=(C.i0+C.i1)/2+0.35;CAM0.tz=cam.tz=(C.j0+C.j1)/2+0.05;CAM0.dist=cam.dist=W<H?12.4:10.8;CAM0.pitch=cam.pitch=37;CAM0.yaw=cam.yaw=yawT=1.2;}clampCam();updateHud();
   if(!BLD.some(B=>B.owned&&!B.home))setTimeout(()=>toast('Coupe du bois 🪓 pour gagner tes premiers dollars'),900);requestAnimationFrame(t=>{last=t;loop(t);});}
