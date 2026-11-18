@@ -1750,11 +1750,12 @@ function t3RebuildVegetation(){
   const coneEntries=entries.filter(e=>e.k%3===0),ballEntries=entries.filter(e=>e.k%3!==0);
   const cones=new T3.InstancedMesh(coneGeo,vegMat,coneEntries.length*3);cones.castShadow=true;cones.receiveShadow=true;
   const balls=new T3.InstancedMesh(ballGeo,vegMat,ballEntries.length);balls.castShadow=true;balls.receiveShadow=true;
+  let coneIndex=0,ballIndex=0;
   entries.forEach(({v,k},n)=>{
     const x=v[0],y=v[1],z=v[2],scale=clamp(v[4]||1,0.45,1.8),rot=(k*2.399)%6.283;
     dummy.position.set(x,y+0.38*scale,z);dummy.rotation.set(0,rot,0);dummy.scale.setScalar(scale);dummy.updateMatrix();trunks.setMatrixAt(n,dummy.matrix);
-    if(k%3===0){const base=coneEntries.findIndex(e=>e.k===k)*3;for(let q=0;q<3;q++){dummy.position.set(x,y+(0.9+q*0.42)*scale,z);dummy.rotation.set(0,rot+q*0.7,0);dummy.scale.set(scale*(1-q*.12),scale,scale*(1-q*.12));dummy.updateMatrix();cones.setMatrixAt(base+q,dummy.matrix);}}
-    else{const index=ballEntries.findIndex(e=>e.k===k);dummy.position.set(x,y+1.15*scale,z);dummy.rotation.set(0,rot,0);dummy.scale.set(scale*1.25,scale,scale*1.15);dummy.updateMatrix();balls.setMatrixAt(index,dummy.matrix);}
+    if(k%3===0){for(let q=0;q<3;q++){dummy.position.set(x,y+(0.9+q*0.42)*scale,z);dummy.rotation.set(0,rot+q*0.7,0);dummy.scale.set(scale*(1-q*.12),scale,scale*(1-q*.12));dummy.updateMatrix();cones.setMatrixAt(coneIndex++,dummy.matrix);}}
+    else{dummy.position.set(x,y+1.15*scale,z);dummy.rotation.set(0,rot,0);dummy.scale.set(scale*1.25,scale,scale*1.15);dummy.updateMatrix();balls.setMatrixAt(ballIndex++,dummy.matrix);}
   });
   trunks.instanceMatrix.needsUpdate=true;cones.instanceMatrix.needsUpdate=true;balls.instanceMatrix.needsUpdate=true;
   group.add(trunks,cones,balls);T3world.add(group);T3vegGroup=group;T3vegDirty=false;
