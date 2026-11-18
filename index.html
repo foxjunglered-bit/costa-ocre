@@ -1286,8 +1286,8 @@ function buildHouse(B){if(B.special){buildSpecial(B);return;}
       for(let t=0;t<=8;t++){const q=F(lerp(a,b,t/8),yy,0.21);mb.box(q[0]-0.008,yy,q[2]-0.008,q[0]+0.008,yy+0.2,q[2]+0.008,{l:TL.WHITE,c:C3('#2a2018')},null,0.2);}
       const pf=F(s,yy,0.15);B.flowers.push([pf[0],pf[1],pf[2],'climb',0.2,1]);}
   }
-  // Maison prototype photorealiste : traitement special limite a une seule parcelle.
-  if(B.idx===0&&lv>=3&&!isShop(B)){
+  // Direction architecturale mediterraneenne : appliquer les details de facade a toutes les maisons evoluees.
+  if(lv>=2&&!isShop(B)){
     const front=face(d,'+j'),stone=C3('#b9a184'),cream=C3('#f3e6cf'),wood=C3('#68452f'),iron=C3('#242b2a');
     // Socle en pierre avec joints horizontaux visibles.
     for(let k=0;k<5;k++){
