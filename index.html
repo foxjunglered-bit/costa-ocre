@@ -1859,7 +1859,9 @@ function t3SyncBuildings(){
 function t3InitTraffic(){
   if(T3traffic.ready)return;
   if(!CARM)trafficInit();
-  CARM.forEach((m)=>{const obj=t3MakeMesh(m,false);if(obj){T3world.add(obj);T3traffic.cars.push(obj);}});
+  const carTemplates=CARM.map((m)=>t3MakeMesh(m,false));
+  CARS.forEach((c)=>{const template=carTemplates[c.m];if(template){const obj=template.clone();obj.geometry=template.geometry;T3world.add(obj);T3traffic.cars.push({source:c,obj});}});
+  T3traffic.carTemplates=carTemplates;
   PEDS.forEach((p)=>{
     const group=new T3.Group(),body=t3MakeMesh(PEDM[p.m],false),legGeo=LEGM[p.lg];
     if(body)group.add(body);
@@ -1905,8 +1907,7 @@ function t3UpdateBoats(){
 }
 function t3UpdateTraffic(){
   if(!T3traffic.ready)return;
-  CARS.forEach((c,k)=>{
-    const obj=T3traffic.cars[c.m];if(!obj)return;
+  T3traffic.cars.forEach(({source:c,obj})=>{
     const q=roadAt(c.r,c.d),fi=q.ti*c.dir,fj=q.tj*c.dir;
     obj.position.set(q.i-fj*0.14,q.y,q.j+fi*0.14);
     obj.rotation.set(0,Math.atan2(-fj,fi),0);
