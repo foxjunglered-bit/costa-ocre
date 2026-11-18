@@ -1824,6 +1824,7 @@ function drawBB(pr,right,up,mVP){gl.useProgram(pr.p);if(pr===P.bb)setCommon(pr);
    Le monde et sa logique sont conservés, mais le rendu final passe
    par Three.js : matériaux PBR, éclairage physique et ombres douces. */
 let T3=null,T3scene=null,T3camera=null,T3renderer=null,T3world=null,T3buildings=new Map(),T3boats=[];
+let T3traffic={ready:false,cars:[],peds:[]};
 function t3Geometry(m,terrain=false){
   if(!m||!m.cpuV||!m.cpuIx)return null;
   const a=m.cpuV,idx=m.cpuIx,st=m.layout.reduce((q,x)=>q+x[1],0),count=a.length/st;
@@ -1855,6 +1856,42 @@ function t3SyncBuildings(){
     const obj=t3MakeMesh(B.mesh,false);if(obj){T3world.add(obj);T3buildings.set(B,{source:B.mesh,obj});}}
   for(const [B,v] of T3buildings)if(!active.has(B)){T3world.remove(v.obj);v.obj.geometry.dispose();T3buildings.delete(B);}
 }
+function t3InitTraffic(){
+  if(T3traffic.ready)return;
+  if(!CARM)trafficInit();
+  CARM.forEach((m)=>{const obj=t3MakeMesh(m,false);if(obj){T3world.add(obj);T3traffic.cars.push(obj);}});
+  PEDS.forEach((p)=>{
+    const group=new T3.Group(),body=t3MakeMesh(PEDM[p.m],false),legGeo=LEGM[p.lg];
+    if(body)group.add(body);
+    const legs=[];
+    for(const side of [-1,1]){
+      const pivot=new T3.Group();pivot.position.set(0,0.13,side*0.022);
+      const leg=t3MakeMesh(legGeo,false);if(leg)pivot.add(leg);
+      group.add(pivot);legs.push(pivot);
+    }
+    T3world.add(group);T3traffic.peds.push({source:p,group,legs});
+  });
+  T3traffic.ready=true;
+}
+function t3UpdateTraffic(){
+  if(!T3traffic.ready)return;
+  CARS.forEach((c,k)=>{
+    const obj=T3traffic.cars[c.m];if(!obj)return;
+    const q=roadAt(c.r,c.d),fi=q.ti*c.dir,fj=q.tj*c.dir;
+    obj.position.set(q.i-fj*0.14,q.y,q.j+fi*0.14);
+    obj.rotation.set(0,Math.atan2(-fj,fi),0);
+  });
+  const night=nightNow();
+  T3traffic.peds.forEach(({source:p,group,legs})=>{
+    if(night&&!p.night){group.visible=false;return;}group.visible=true;
+    const off=p.r.car?p.r.w+p.r.sw*0.55:0.07,q=roadAt(p.r,p.d);
+    let lat=p.side*off,fi=q.ti*p.dir,fj=q.tj*p.dir,y=q.y+(p.r.car?0.035:0.005),sw=Math.sin(p.ph)*0.45;
+    if(p.cross){lat=lerp(p.side*off,-p.side*off,p.cross);const side=-p.side;fi=-q.tj*side;fj=q.ti*side;if(lat*lat<p.r.w*p.r.w)y=q.y+0.005;}
+    const x=q.i-q.tj*lat,z=q.j+q.ti*lat;
+    group.position.set(x,y,z);group.rotation.set(0,Math.atan2(-fj,fi),0);
+    legs[0].rotation.z=sw;legs[1].rotation.z=-sw;
+  });
+}
 function initThreeRenderer(){
   if(!window.THREE)throw new Error('Three.js ne s’est pas chargé');
   T3=THREE;
@@ -1878,6 +1915,7 @@ function initThreeRenderer(){
   const sea=t3SimpleWater(MESH.sea,'#4d9eaa',0.78),river=t3SimpleWater(MESH.river,'#64b9bd',0.84);if(sea)T3world.add(sea);if(river)T3world.add(river);
   for(const b of BOATS){if(!b.mesh)continue;const obj=t3MakeMesh(b.mesh,false);if(obj){obj.position.set(b.i||b.ci||0,0,b.j||b.cj||0);obj.rotation.y=b.ry||0;T3world.add(obj);T3boats.push({b,obj});}}
   t3SyncBuildings();
+  t3InitTraffic();
   // Les arbres et arbustes sont reconstruits en volumes bas-polygones, plus de sprites plats.
   const vegMat=new T3.MeshStandardMaterial({color:'#668e4d',roughness:1});
   const trunkMat=new T3.MeshStandardMaterial({color:'#765239',roughness:1});
@@ -1892,7 +1930,7 @@ function initThreeRenderer(){
 }
 function renderThree(){
   if(!T3||!T3.ready)return;
-  updateLight();updateCamera();t3SyncBuildings();
+  updateLight();updateCamera();t3SyncBuildings();t3UpdateTraffic();
   T3camera.fov=cam.fov;T3camera.aspect=W/H;T3camera.position.set(eye[0],eye[1],eye[2]);T3camera.up.set(0,1,0);T3camera.lookAt(cam.tx,cam.ty,cam.tz);T3camera.updateProjectionMatrix();T3camera.updateMatrixWorld(true);
   VP=mmul(new Float32Array(T3camera.projectionMatrix.elements),new Float32Array(T3camera.matrixWorldInverse.elements));iVP=minv(VP);
   camRight=[T3camera.matrixWorld.elements[0],T3camera.matrixWorld.elements[1],T3camera.matrixWorld.elements[2]];camUp=[T3camera.matrixWorld.elements[4],T3camera.matrixWorld.elements[5],T3camera.matrixWorld.elements[6]];
