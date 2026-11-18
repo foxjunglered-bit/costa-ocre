@@ -1741,17 +1741,23 @@ function t3UpdateTraffic(){
   });
 }
 function t3RebuildVegetation(){
-  if(T3vegGroup){T3world.remove(T3vegGroup);T3vegGroup.traverse(o=>{if(o.isMesh)o.geometry.dispose();});}
+  if(T3vegGroup){T3world.remove(T3vegGroup);T3vegGroup.traverse(o=>{if(o.isMesh){o.geometry.dispose();if(o.material)o.material.dispose();}});}
+  const entries=vegList.map((v,k)=>({v,k})).filter(({v})=>v[4]>=0.35);
   const vegMat=new T3.MeshStandardMaterial({color:'#668e4d',roughness:1}),trunkMat=new T3.MeshStandardMaterial({color:'#765239',roughness:1});
   const coneGeo=new T3.ConeGeometry(0.48,1.25,7),ballGeo=new T3.IcosahedronGeometry(0.62,1),trunkGeo=new T3.CylinderGeometry(0.075,0.11,0.8,7);
-  const group=new T3.Group();T3world.add(group);
-  for(let k=0;k<vegList.length;k++){
-    const v=vegList[k],x=v[0],y=v[1],z=v[2],scale=clamp(v[4]||1,0.45,1.8);if(v[4]<0.35)continue;
-    const trunk=new T3.Mesh(trunkGeo,trunkMat);trunk.position.set(x,y+0.38*scale,z);trunk.scale.setScalar(scale);trunk.castShadow=true;group.add(trunk);
-    if(k%3===0){for(let q=0;q<3;q++){const leaf=new T3.Mesh(coneGeo,vegMat);leaf.position.set(x,y+(0.9+q*0.42)*scale,z);leaf.scale.set(scale*(1-q*.12),scale,scale*(1-q*.12));leaf.castShadow=true;group.add(leaf);}}
-    else{const leaf=new T3.Mesh(ballGeo,vegMat);leaf.position.set(x,y+1.15*scale,z);leaf.scale.set(scale*1.25,scale,scale*1.15);leaf.castShadow=true;group.add(leaf);}
-  }
-  T3vegGroup=group;T3vegDirty=false;
+  const group=new T3.Group(),dummy=new T3.Object3D();
+  const trunks=new T3.InstancedMesh(trunkGeo,trunkMat,entries.length);trunks.castShadow=true;trunks.receiveShadow=true;
+  const coneEntries=entries.filter(e=>e.k%3===0),ballEntries=entries.filter(e=>e.k%3!==0);
+  const cones=new T3.InstancedMesh(coneGeo,vegMat,coneEntries.length*3);cones.castShadow=true;cones.receiveShadow=true;
+  const balls=new T3.InstancedMesh(ballGeo,vegMat,ballEntries.length);balls.castShadow=true;balls.receiveShadow=true;
+  entries.forEach(({v,k},n)=>{
+    const x=v[0],y=v[1],z=v[2],scale=clamp(v[4]||1,0.45,1.8),rot=(k*2.399)%6.283;
+    dummy.position.set(x,y+0.38*scale,z);dummy.rotation.set(0,rot,0);dummy.scale.setScalar(scale);dummy.updateMatrix();trunks.setMatrixAt(n,dummy.matrix);
+    if(k%3===0){const base=coneEntries.findIndex(e=>e.k===k)*3;for(let q=0;q<3;q++){dummy.position.set(x,y+(0.9+q*0.42)*scale,z);dummy.rotation.set(0,rot+q*0.7,0);dummy.scale.set(scale*(1-q*.12),scale,scale*(1-q*.12));dummy.updateMatrix();cones.setMatrixAt(base+q,dummy.matrix);}}
+    else{const index=ballEntries.findIndex(e=>e.k===k);dummy.position.set(x,y+1.15*scale,z);dummy.rotation.set(0,rot,0);dummy.scale.set(scale*1.25,scale,scale*1.15);dummy.updateMatrix();balls.setMatrixAt(index,dummy.matrix);}
+  });
+  trunks.instanceMatrix.needsUpdate=true;cones.instanceMatrix.needsUpdate=true;balls.instanceMatrix.needsUpdate=true;
+  group.add(trunks,cones,balls);T3world.add(group);T3vegGroup=group;T3vegDirty=false;
 }
 function t3SyncSelection(){
   const record=sel&&T3buildings.get(sel),source=record?record.obj:null;
