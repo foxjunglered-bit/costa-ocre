@@ -130,7 +130,20 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0d1a26;font-family:'B
 #infox{width:100%;border:0;border-radius:14px;background:#ffc23d;box-shadow:0 4px 0 #a9720c;font-family:inherit;font-weight:800;font-size:17px;padding:10px}
 #tip{position:fixed;z-index:60;display:none;max-width:260px;background:rgba(255,246,222,.97);color:#2a1d0a;border-radius:12px;padding:8px 12px;font-size:13.5px;font-weight:700;line-height:1.35;box-shadow:0 6px 18px rgba(0,0,0,.5);pointer-events:none}
 #hud .chip{pointer-events:auto}
-#devb,#dev{display:none!important}
+#devb{display:none}
+body.dev-enabled #devb{display:block}
+#dev{display:none}
+#devlock{position:fixed;inset:0;z-index:1000;background:rgba(7,10,15,.96);color:#fff;display:none;align-items:center;justify-content:center;padding:20px;font-family:inherit}
+#devlock.open{display:flex}
+#devlock .lockcard{width:min(92vw,360px);background:#1c140b;border:2px solid #e8a33d;border-radius:20px;padding:20px;text-align:center;box-shadow:0 12px 50px #0009}
+#devlock h2{margin:0 0 8px;color:#ffd9a0;font-size:21px}
+#devlock p{font-size:13px;color:#d8c6a8;line-height:1.4}
+#devgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:230px;max-width:80vw;margin:18px auto;touch-action:none;user-select:none}
+#devgrid button{aspect-ratio:1;border-radius:50%;border:2px solid #d8c6a8;background:#3a2a18;color:#fff;font-size:18px;font-weight:800;touch-action:none}
+#devgrid button.selected{background:#ffc23d;color:#1c140b;border-color:#fff}
+#devlock .lockactions{display:flex;gap:8px}
+#devlock .lockactions button{flex:1;border:0;border-radius:10px;padding:11px;background:#ffc23d;color:#1c140b;font-weight:800}
+#devlock .lockactions button.secondary{background:#554638;color:#fff}
 </style>
 </head>
 <body>
@@ -145,6 +158,16 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0d1a26;font-family:'B
 <button id="phb">📱</button><button id="mapb">🗺️</button><button id="ctrb">🎯</button><button id="fsb">⛶</button><button id="cadb">▦</button>
 <div id="map"><canvas id="mapc"></canvas><button id="mapx">✕</button><button id="mapctr">🎯</button><div id="mapleg"><span style="white-space:nowrap"><i style="background:#c9763a"></i>Résidentiel</span>  <span style="white-space:nowrap"><i style="background:#4a90d9"></i>Commercial</span>  <span style="white-space:nowrap"><i style="background:rgba(74,144,217,.4);border:1px solid #78b4f0"></i>Zone commerces</span>  <span style="white-space:nowrap"><i style="background:#9a7fc0"></i>Industriel</span>  <span style="white-space:nowrap"><i style="background:#7cc44f"></i>Agricole</span>  <span style="white-space:nowrap"><i style="background:#c8b896"></i>À vendre</span>  <span style="white-space:nowrap"><i style="background:#6e6a64"></i>Ruine</span> </div></div>
 <button id="devb">🛠️</button>
+<div id="devlock" aria-hidden="true"><div class="lockcard">
+  <h2 id="devlocktitle">Accès développeur</h2>
+  <p id="devlockhint">Dessine ton schéma sur au moins 4 points.</p>
+  <div id="devgrid">
+    <button type="button" data-dot="1">1</button><button type="button" data-dot="2">2</button><button type="button" data-dot="3">3</button>
+    <button type="button" data-dot="4">4</button><button type="button" data-dot="5">5</button><button type="button" data-dot="6">6</button>
+    <button type="button" data-dot="7">7</button><button type="button" data-dot="8">8</button><button type="button" data-dot="9">9</button>
+  </div>
+  <div class="lockactions"><button type="button" id="devlockcancel" class="secondary">Annuler</button><button type="button" id="devlockok">Valider</button></div>
+</div></div>
 <div id="dev"><div class="dh">Mode développeur <button id="devx">✕</button></div>
   <div class="dl">Heure : <b id="devht">08:00</b></div><input id="devh" type="range" min="0" max="1440" step="5" value="480">
   <div class="dl">Vitesse du temps</div><div class="drow"><button data-ts="1">×1</button><button data-ts="10">×10</button><button data-ts="60">×60</button><button data-ts="0">Pause</button></div>
@@ -1790,6 +1813,42 @@ $('cadb').classList.toggle('on',CADON);$('cadb').addEventListener('click',()=>{C
 $('ctrb').addEventListener('click',()=>{sel=null;savedCam=null;menuOpen=false;updateSel();vel=[0,0];tgt.pitch=cam.pitch;
   anim={a:{tx:cam.tx,tz:cam.tz,dist:cam.dist},b:{tx:CAM0.tx,tz:CAM0.tz,dist:cam.dist},t0:performance.now(),dur:800};});
 
+/* ---------------- ACCÈS DÉVELOPPEUR PAR SCHÉMA ---------------- */
+const DEV_PATTERN_KEY='costaocre_dev_pattern_v1';
+const DEV_MODE=new URLSearchParams(location.search).get('dev')==='1';
+let devTrace=[],devPointer=false;
+function devLockOpen(){
+  devTrace=[];document.querySelectorAll('#devgrid button').forEach(b=>b.classList.remove('selected'));
+  const hasPattern=!!localStorage.getItem(DEV_PATTERN_KEY);
+  $('devlocktitle').textContent=hasPattern?'Déverrouiller le mode développeur':'Créer ton schéma développeur';
+  $('devlockhint').textContent=hasPattern?'Dessine ton schéma personnel (4 points minimum).':'Choisis un schéma que tu retiendras. Il sera enregistré sur cet appareil.';
+  $('devlock').classList.add('open');$('devlock').setAttribute('aria-hidden','false');
+}
+function devDotAt(x,y){
+  const el=document.elementFromPoint(x,y);
+  const b=el&&el.closest?el.closest('#devgrid [data-dot]'):null;
+  if(!b)return;
+  const n=+b.dataset.dot;if(!devTrace.includes(n)){devTrace.push(n);b.classList.add('selected');b.textContent=devTrace.length;}
+}
+function devFinishTrace(){
+  devPointer=false;
+  if(devTrace.length<4){$('devlockhint').textContent='Il faut au moins 4 points. Recommence.';return;}
+  const key=JSON.stringify(devTrace),saved=localStorage.getItem(DEV_PATTERN_KEY);
+  if(!saved){localStorage.setItem(DEV_PATTERN_KEY,key);devUnlock();return;}
+  if(key===saved){devUnlock();return;}
+  $('devlockhint').textContent='Schéma incorrect. Réessaie.';
+  devTrace=[];document.querySelectorAll('#devgrid button').forEach(b=>{b.classList.remove('selected');b.textContent=b.dataset.dot;});
+}
+function devUnlock(){
+  $('devlock').classList.remove('open');$('devlock').setAttribute('aria-hidden','true');
+  $('dev').style.display='block';devSync();
+}
+$('devgrid').addEventListener('pointerdown',e=>{if(!e.target.closest('[data-dot]'))return;devTrace=[];document.querySelectorAll('#devgrid button').forEach(b=>{b.classList.remove('selected');b.textContent=b.dataset.dot;});devPointer=true;devDotAt(e.clientX,e.clientY);});
+document.addEventListener('pointermove',e=>{if(devPointer)devDotAt(e.clientX,e.clientY);});
+document.addEventListener('pointerup',()=>{if(devPointer)devFinishTrace();});
+$('devlockok').addEventListener('click',()=>{if(devPointer)devFinishTrace();else if(devTrace.length>=4)devFinishTrace();else $('devlockhint').textContent='Dessine d’abord un schéma d’au moins 4 points.';});
+$('devlockcancel').addEventListener('click',()=>{$('devlock').classList.remove('open');$('devlock').setAttribute('aria-hidden','true');});
+if(DEV_MODE){document.body.classList.add('dev-enabled');$('devb').addEventListener('click',devLockOpen);}
 /* ---------------- MODE DÉVELOPPEUR ---------------- */
 function devSync(){const m=Math.round(G.t*1440);$('devh').value=m;$('devht').textContent=String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');document.querySelectorAll('#dev [data-ts]').forEach(b=>b.classList.toggle('on',+b.dataset.ts===timeScale));}
 $('devb').addEventListener('click',()=>{$('dev').style.display='block';devSync();});$('devx').addEventListener('click',()=>{$('dev').style.display='none';});
