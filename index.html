@@ -2185,7 +2185,7 @@ function doSell(key){const T=key[0],n=key.slice(1);let g=0,msg='';
     recompute();buildHouse(B);houseVer++;clearVeg();msg=bname(B)+' revendu';}
   recompute();floats.push({p:[cam.tx,2,cam.tz],txt:'💸 +'+fmt(g)+' $',life:1.8});toast(msg+' : +'+fmt(g)+' $');sellArm=null;if(T!=='c')closeMenu(true);updateSel();updateHud();save();}
 function constructB(B,bt){if(!B||!B.owned||B.built||!BT[bt])return;if(BT[bt].cat==='com'&&!shopOk(B)){toast('Les commerces se construisent au centre du village');return;}const c=rnd(vOf(bt,1));if(G.money<c){toast('Il te manque '+fmt(c-G.money)+' $');return;}
-  G.money-=c;B.spent=(B.spent||0)+c;B.built=true;B.bt=bt;B.lvl=1;B.ruin=false;B.stash=0;B.pulse=1;B.awn=false;recompute();buildHouse(B);houseVer++;buildBillboards();buildGlows();
+  G.money-=c;B.spent=(B.spent||0)+c;B.built=true;B.bt=bt;B.lvl=1;B.ruin=false;B.stash=0;B.pulse=1;B.awn=false;recompute();buildHouse(B);houseVer++;clearVeg();
   floats.push({p:[B.mid[0],B.top+0.6,B.mid[2]],txt:BT[bt].em+' Construit !',life:1.8});toast(BT[bt].name+' construit : '+fmt(c)+' $');updateSel();updateHud();save();}
 $('bmb').addEventListener('click',e=>{e.stopPropagation();const t=e.target.closest('.bopt');if(!t||!sel)return;if(t.dataset.act==='sell'){const k=t.dataset.key;if(sellArm!==k){sellArm=k;updateSel();return;}doSell(k);return;}if(t.dataset.bt)constructB(sel,t.dataset.bt);else if(t.dataset.act==='garage')buildGarage();else if(t.dataset.car)buyCar(t.dataset.car);else if(t.dataset.farm&&sel.parcel)constructFarm(sel.P,t.dataset.farm);});
 $('bent').addEventListener('click',e=>{e.stopPropagation();if(sel)openMenu();});
@@ -2225,7 +2225,7 @@ $('phwrap').addEventListener('click',e=>{if(e.target===$('phwrap')){phClose();re
   else if(t.dataset.k!==undefined){const B=PH.list[+t.dataset.k];if(!B)return;phClose();menuOpen=false;sel=B;anim={a:{tx:cam.tx,tz:cam.tz,dist:cam.dist},b:{tx:B.mid[0],tz:B.mid[2],dist:cam.dist},t0:performance.now(),dur:800};updateSel();}});
 setInterval(()=>{if($('phwrap').style.display==='flex')phVals();},500);
 function buyB(B){if(!B||B.parcel||B.dealer)return;const c=costOf(B);if(c===null)return;if(G.money<c){toast('Il te manque '+fmt(c-G.money)+' $');return;}
-  const wasOwned=B.owned;G.money-=c;B.spent=(B.spent||0)+c;if(!B.owned){B.owned=true;if(B.special)B.lvl=1;}else if(B.built||B.special||B.home)B.lvl++;B.pulse=1;recompute();buildHouse(B);houseVer++;buildBillboards();buildGlows();floats.push({p:[B.mid[0],B.top+0.6,B.mid[2]],txt:wasOwned?'Niveau '+B.lvl:(B.built?'Acheté !':'Terrain acheté !'),life:1.6});
+  const wasOwned=B.owned;G.money-=c;B.spent=(B.spent||0)+c;if(!B.owned){B.owned=true;if(B.special)B.lvl=1;}else if(B.built||B.special||B.home)B.lvl++;B.pulse=1;recompute();buildHouse(B);houseVer++;clearVeg();floats.push({p:[B.mid[0],B.top+0.6,B.mid[2]],txt:wasOwned?'Niveau '+B.lvl:(B.built?'Acheté !':'Terrain acheté !'),life:1.6});
   if(!G.hints.buy){G.hints.buy=1;toast(B.built?'Bravo ! Les pots aux fenêtres fleurissent avec les loyers : récolte quand c\'est en fleurs':'Terrain à toi : appuie sur Entrer pour construire');}else toast(bname(B)+(wasOwned?' : niveau '+B.lvl+' !':' acheté !'));updateSel();updateHud();save();}
 
 /* ---------------- CARTE (vue du dessus simplifiée) ---------------- */
@@ -2417,7 +2417,7 @@ const farmCap=P=>farmRate(P)*DAY*2;
 const farmUp=P=>!P.farm||P.farm.l>=10?null:farmValT(P,P.farm.t,P.farm.l+1)-farmValT(P,P.farm.t,P.farm.l);
 function farmOpt(P,k){const T=FARMT[k],c=farmValT(P,k,1),d1=c*T.y*harmMult();return '<button class="bopt'+(G.money<c?' off':'')+'" data-farm="'+k+'"><span class="e">'+T.em+'</span><span class="nm">'+T.name+'<small>≈ '+fmt(d1)+' $/jour · 10 niveaux</small></span><b>'+fmt(c)+' $</b></button>';}
 let farmDirty=true;
-function constructFarm(P,t){if(!P||!P.owned||P.farm||!FARMT[t])return;const c=farmValT(P,t,1);if(G.money<c){toast('Il te manque '+fmt(c-G.money)+' $');return;}G.money-=c;P.spent=(P.spent||0)+c;P.farm={t,l:1};P.stash=0;farmDirty=true;recompute();buildBillboards();floats.push({p:[P.mid[0],P.mid[1]+1,P.mid[2]],txt:FARMT[t].em+' '+FARMT[t].name+' !',life:1.8});toast(FARMT[t].name+' : '+fmt(c)+' $');updateSel();updateHud();save();}
+function constructFarm(P,t){if(!P||!P.owned||P.farm||!FARMT[t])return;const c=farmValT(P,t,1);if(G.money<c){toast('Il te manque '+fmt(c-G.money)+' $');return;}G.money-=c;P.spent=(P.spent||0)+c;P.farm={t,l:1};P.stash=0;farmDirty=true;recompute();clearVeg();floats.push({p:[P.mid[0],P.mid[1]+1,P.mid[2]],txt:FARMT[t].em+' '+FARMT[t].name+' !',life:1.8});toast(FARMT[t].name+' : '+fmt(c)+' $');updateSel();updateHud();save();}
 function upFarm(P){const c=farmUp(P);if(c===null)return;if(G.money<c){toast('Il te manque '+fmt(c-G.money)+' $');return;}G.money-=c;P.spent=(P.spent||0)+c;P.farm.l++;farmDirty=true;recompute();floats.push({p:[P.mid[0],P.mid[1]+1,P.mid[2]],txt:'Niveau '+P.farm.l,life:1.5});toast(FARMT[P.farm.t].name+' : niveau '+P.farm.l+' !');updateSel();updateHud();save();}
 const homeB=()=>BLD.find(B=>B.home);
 function buildGarage(){if(G.garage)return;if(G.money<GARCOST){toast('Il te manque '+fmt(GARCOST-G.money)+' $');return;}G.money-=GARCOST;G.garage=1;const H=homeB();H.spent=(H.spent||0)+GARCOST;buildHouse(H);houseVer++;floats.push({p:[H.mid[0],H.top+0.6,H.mid[2]],txt:'🚗 Garage construit !',life:1.8});toast('Annexe garage construite : '+fmt(GARCOST)+' $');updateSel();updateHud();save();}
