@@ -786,7 +786,6 @@ function buildAtlas(){
 
 /* ---------------- WEBGL : SHADERS ---------------- */
 const cv=$('gl'),ui=$('ui'),uctx=ui.getContext('2d');
-const gl=cv.getContext('webgl2',{antialias:true,alpha:false,powerPreference:'high-performance'});
 const LIGHT=`
 uniform vec3 uSunDir,uSunCol,uSky,uGnd,uFog,uCam;uniform float uFogN,uFogF,uNight;
 uniform highp sampler2DShadow uShadow;uniform float uSMt,uExpo;
@@ -927,11 +926,8 @@ class MB{constructor(ter){this.v=[];this.ix=[];this.n=0;this.ter=ter;}
     if(cap)this.tri(p(a0,r1,y0+h),p(a1,r1,y0+h),[cx,y0+h+(cap===2?r1*1.2:0),cz],{...o,out:[0,1,0]});}}
 }
 const LAY3=[[0,3],[1,3],[2,4],[3,3]],LAYT=[[0,3],[1,3],[2,4],[3,3],[4,4]];
-function upload(v,ix,layout){const vao=gl.createVertexArray();gl.bindVertexArray(vao);const vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(v),gl.STATIC_DRAW);
-  const st=layout.reduce((a,l)=>a+l[1],0)*4;let off=0;for(const [loc,sz] of layout){gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,sz,gl.FLOAT,false,st,off);off+=sz*4;}
-  if(layout.length===4){gl.disableVertexAttribArray(4);gl.vertexAttrib4f(4,1,0,0,0);}
-  const ib=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint32Array(ix),gl.STATIC_DRAW);gl.bindVertexArray(null);return{vao,vb,ib,n:ix.length,cpuV:new Float32Array(v),cpuIx:new Uint32Array(ix),layout};}
-function freeMesh(m){if(!m)return;gl.deleteVertexArray(m.vao);gl.deleteBuffer(m.vb);gl.deleteBuffer(m.ib);}
+function upload(v,ix,layout){return{n:ix.length,cpuV:new Float32Array(v),cpuIx:new Uint32Array(ix),layout};}
+function freeMesh(m){if(!m)return;}
 const mbUp=mb=>upload(mb.v,mb.ix,mb.ter?LAYT:LAY3);
 
 /* ---------------- TERRAIN ---------------- */
@@ -942,8 +938,7 @@ function buildVerge(){const A=new Uint8Array(MS*MS).fill(255);
     r.s.forEach(p=>{const dv=Math.hypot(p.i-VC[0],p.j-VC[1]);if(dv<13||riverDist(p.i,p.j)<0.7||hAt(p.i,p.j)<0.15)return;const add=1-ss(13,17,dv);
       const a0=Math.floor((p.i+MO)*MR),b0=Math.floor((p.j+MO)*MR);
       for(let a=a0-rc;a<=a0+rc;a++)for(let b=b0-rc;b<=b0+rc;b++){if(a<0||b<0||a>=MS||b>=MS)continue;const ci=(a+0.5)/MR-MO,cj=(b+0.5)/MR-MO;const d=Math.hypot(ci-p.i,cj-p.j)-r.full+add;if(d>=1)continue;const v=Math.round(clamp(d,0,1)*255);if(v<A[a*MS+b])A[a*MS+b]=v;}});});
-  vgTex=gl.createTexture();gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,vgTex);gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);gl.texImage2D(gl.TEXTURE_2D,0,gl.R8,MS,MS,0,gl.RED,gl.UNSIGNED_BYTE,A);
-  [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER].forEach(q=>gl.texParameteri(gl.TEXTURE_2D,q,gl.LINEAR));[gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(q=>gl.texParameteri(gl.TEXTURE_2D,q,gl.CLAMP_TO_EDGE));gl.activeTexture(gl.TEXTURE0);}
+  vgTex=A;}
 function buildTerrain(){const mb=new MB(true);const ao=new Float32Array(MS*MS);
   const addR=(i0,j0,i1,j1,rad,k)=>{for(let a=i0-rad;a<=i1+rad;a+=1/MR)for(let b=j0-rad;b<=j1+rad;b+=1/MR){const dd=Math.hypot(Math.max(i0-a,0,a-i1),Math.max(j0-b,0,b-j1));if(dd>rad)continue;const q=midx(a,b);if(q>=0)ao[q]=Math.max(ao[q],k*(1-dd/rad));}};
   const pv=new Float32Array(MS*MS);const addP=(i0,j0,i1,j1,rad)=>{for(let a=i0-rad;a<=i1+rad;a+=1/MR)for(let b=j0-rad;b<=j1+rad;b+=1/MR){const dd=Math.hypot(Math.max(i0-a,0,a-i1),Math.max(j0-b,0,b-j1));if(dd>rad)continue;const q=midx(a,b);if(q>=0)pv[q]=Math.max(pv[q],ss(rad,rad*0.45,dd));}};
@@ -1755,23 +1750,15 @@ function buildGlows(){const all=GLOWS.slice();[...BLD,...DECO].forEach(B=>(B.glo
 
 /* ---------------- RESSOURCES GPU ---------------- */
 let THREE_TEX_PIXELS=null,shFr=0,shSun=[0,0,0];let texArr,nrmArr,atlasTex,shadowTex,shadowFB,SM=2048,shKey='',houseVer=0,shC=[0,0,0],shHS=10;let MESH={};
-function initGL(){
-  P.mesh=prog(VS_MESH,FS_MESH);P.ter=prog(VS_MESH,FS_TER);P.sh=prog(VS_SH,FS_SH);P.bb=prog(VS_BB,FS_BB);P.bbsh=prog(VS_BB,FS_BBSH);P.w=prog(VS_W,FS_W);P.gl=prog(VS_GL,FS_GL);P.sky=prog(VS_SKY,FS_SKY);P.pm=prog(`#version 300 es
-layout(location=0) in vec3 aP;uniform mat4 uVP;out vec2 vX;void main(){vX=aP.xz;gl_Position=uVP*vec4(aP,1.0);}`,`#version 300 es
-precision highp float;in vec2 vX;uniform vec2 uPoly[180];uniform int uN;out vec4 o;
-void main(){bool c=false;for(int a=0,b=0;a<180;a++){if(a>=uN)break;b=a==0?uN-1:a-1;vec2 p=uPoly[a],q=uPoly[b];if(((p.y>vX.y)!=(q.y>vX.y))&&(vX.x<(q.x-p.x)*(vX.y-p.y)/(q.y-p.y)+p.x))c=!c;}if(!c)discard;o=vec4(1.0);}`);
-  THREE_TEX_PIXELS=genTextures();texArr=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,texArr);gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,gl.RGBA8,TS,TS,TEXN,0,gl.RGBA,gl.UNSIGNED_BYTE,THREE_TEX_PIXELS);
-  gl.generateMipmap(gl.TEXTURE_2D_ARRAY);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);
-  const an=gl.getExtension('EXT_texture_filter_anisotropic');if(an)gl.texParameterf(gl.TEXTURE_2D_ARRAY,an.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(4,gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
-  nrmArr=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D_ARRAY,nrmArr);gl.texImage3D(gl.TEXTURE_2D_ARRAY,0,gl.RGBA8,TS,TS,TEXN,0,gl.RGBA,gl.UNSIGNED_BYTE,NRM_DATA);NRM_DATA=null;
-  gl.generateMipmap(gl.TEXTURE_2D_ARRAY);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);
-  buildAtlas();atlasTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,atlasTex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,atlasCanvas);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  shadowTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,shadowTex);gl.texStorage2D(gl.TEXTURE_2D,1,gl.DEPTH_COMPONENT24,SM,SM);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_COMPARE_MODE,gl.COMPARE_REF_TO_TEXTURE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_COMPARE_FUNC,gl.LEQUAL);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  shadowFB=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,shadowFB);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,shadowTex,0);gl.drawBuffers([gl.NONE]);gl.readBuffer(gl.NONE);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-  setupParkings();placeVeg();placeWood();buildVerge();MESH.ter=buildTerrain();MESH.sea=buildSea();MESH.river=buildRiver();MESH.stat=buildStatic();MESH.bd=buildBackdrop();MESH.cad=buildCad();
+function initSceneData(){
+  // Construction CPU des données de scène ; aucun shader ni tampon WebGL historique.
+  THREE_TEX_PIXELS=genTextures();
+  buildAtlas();
+  setupParkings();placeVeg();placeWood();buildVerge();
+  MESH.ter=buildTerrain();MESH.sea=buildSea();MESH.river=buildRiver();
+  MESH.stat=buildStatic();MESH.bd=buildBackdrop();MESH.cad=buildCad();
   BOATS.forEach(b=>b.mesh=buildBoatMesh(C3(b.col),b.sail));
-  BLD.forEach(buildHouse);DECO.forEach(buildHouse);buildBillboards();buildGlows();
+  BLD.forEach(buildHouse);DECO.forEach(buildHouse);clearVeg();
 }
 
 /* ---------------- CAMÉRA & LUMIÈRE ---------------- */
@@ -1929,7 +1916,7 @@ function initThreeRenderer(){
   // Three.js devient l'unique moteur de rendu à l'écran. Il reprend le canvas
   // et le contexte WebGL2 déjà créés pour compiler les ressources historiques.
   // Aucun second canvas ni second contexte graphique n'est créé.
-  T3renderer=new T3.WebGLRenderer({canvas:cv,context:gl,antialias:true,alpha:false,powerPreference:'high-performance'});
+  T3renderer=new T3.WebGLRenderer({canvas:cv,antialias:true,alpha:false,powerPreference:'high-performance'});
   T3renderer.setPixelRatio(Math.min(1.5,window.devicePixelRatio||1));T3renderer.outputColorSpace=T3.SRGBColorSpace;T3renderer.toneMapping=T3.ACESFilmicToneMapping;T3renderer.toneMappingExposure=1.18;
   T3renderer.shadowMap.enabled=true;T3renderer.shadowMap.type=T3.PCFSoftShadowMap;
   T3scene=new T3.Scene();T3scene.background=new T3.Color('#b9c9c5');T3scene.fog=new T3.Fog('#c5d0bd',48,145);
@@ -2504,10 +2491,11 @@ let ready=false,unlocked=false;
 
 /* ---------------- DÉMARRAGE ---------------- */
 let started=false;
-function prepare(){if(!gl){$('loading').textContent='Ton navigateur ne gère pas la 3D (WebGL2). Mets à jour ton téléphone ou essaie Chrome/Safari récent.';return;}
-  resize();load();initGL();initThreeRenderer();ready=true;$('loading').style.display='none';if(unlocked)startGame();}
+function prepare(){
+  if(!window.THREE){$('loading').textContent='Three.js ne s’est pas chargé. Vérifie ta connexion puis recharge.';return;}
+  resize();load();initSceneData();initThreeRenderer();ready=true;$('loading').style.display='none';if(unlocked)startGame();}
 setTimeout(()=>{try{prepare();}catch(e){$('loading').textContent='Erreur : '+e.message;console.error(e);}},50);
-function startGame(){if(!ready||started)return;started=true;setTimeout(newsPop,1200);setTimeout(infoAuto,1500);resize();recompute();BLD.forEach(B=>{if(B.meshLv!==B.lvl)buildHouse(B);});buildBillboards();buildGlows();{const C=CHURCH;CAM0.tx=cam.tx=(C.i0+C.i1)/2+0.35;CAM0.tz=cam.tz=(C.j0+C.j1)/2+0.05;CAM0.dist=cam.dist=W<H?12.4:10.8;CAM0.pitch=cam.pitch=37;CAM0.yaw=cam.yaw=yawT=1.2;}clampCam();updateHud();
+function startGame(){if(!ready||started)return;started=true;setTimeout(newsPop,1200);setTimeout(infoAuto,1500);resize();recompute();BLD.forEach(B=>{if(B.meshLv!==B.lvl)buildHouse(B);});{const C=CHURCH;CAM0.tx=cam.tx=(C.i0+C.i1)/2+0.35;CAM0.tz=cam.tz=(C.j0+C.j1)/2+0.05;CAM0.dist=cam.dist=W<H?12.4:10.8;CAM0.pitch=cam.pitch=37;CAM0.yaw=cam.yaw=yawT=1.2;}clampCam();updateHud();
   if(!BLD.some(B=>B.owned&&!B.home))setTimeout(()=>toast('Coupe du bois 🪓 pour gagner tes premiers dollars'),900);requestAnimationFrame(t=>{last=t;loop(t);});}
 </script>
 </body>
