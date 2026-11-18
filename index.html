@@ -1857,9 +1857,11 @@ function t3SyncBuildings(){
 }
 function initThreeRenderer(){
   if(!window.THREE)throw new Error('Three.js ne s’est pas chargé');
-  T3=THREE;const canvas=document.createElement('canvas');canvas.id='three-world';canvas.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none';
-  document.body.insertBefore(canvas,ui);
-  T3renderer=new T3.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+  T3=THREE;
+  // Three.js devient l'unique moteur de rendu à l'écran. Il reprend le canvas
+  // et le contexte WebGL2 déjà créés pour compiler les ressources historiques.
+  // Aucun second canvas ni second contexte graphique n'est créé.
+  T3renderer=new T3.WebGLRenderer({canvas:cv,context:gl,antialias:true,alpha:false,powerPreference:'high-performance'});
   T3renderer.setPixelRatio(Math.min(1.5,window.devicePixelRatio||1));T3renderer.outputColorSpace=T3.SRGBColorSpace;T3renderer.toneMapping=T3.ACESFilmicToneMapping;T3renderer.toneMappingExposure=1.18;
   T3renderer.shadowMap.enabled=true;T3renderer.shadowMap.type=T3.PCFSoftShadowMap;
   T3scene=new T3.Scene();T3scene.background=new T3.Color('#b9c9c5');T3scene.fog=new T3.Fog('#c5d0bd',48,145);
@@ -1886,7 +1888,7 @@ function initThreeRenderer(){
     if(k%3===0){for(let q=0;q<3;q++){const leaf=new T3.Mesh(coneGeo,vegMat);leaf.position.set(x,y+(0.9+q*0.42)*scale,z);leaf.scale.set(scale*(1-q*.12),scale,scale*(1-q*.12));leaf.castShadow=true;treeGroup.add(leaf);}}
     else{const leaf=new T3.Mesh(ballGeo,vegMat);leaf.position.set(x,y+1.15*scale,z);leaf.scale.set(scale*1.25,scale,scale*1.15);leaf.castShadow=true;treeGroup.add(leaf);}
   }
-  T3renderer.setSize(innerWidth,innerHeight,false);cv.style.opacity='0';T3.ready=true;
+  T3renderer.setSize(innerWidth,innerHeight,false);cv.style.opacity='1';T3.ready=true;
 }
 function renderThree(){
   if(!T3||!T3.ready)return;
@@ -1898,38 +1900,11 @@ function renderThree(){
 }
 
 function render(){
-  if(T3&&T3.ready){renderThree();drawUI();return;}
-  updateLight();updateCamera();
-  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D_ARRAY,texArr);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D_ARRAY,nrmArr);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,atlasTex);
-  // ombres
-  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,null);
-  gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);
-  const hs=Math.pow(2,Math.ceil(Math.log2(Math.max(9,cam.dist*0.66))*3)/3),snap=hs*0.25,scx=Math.round(cam.tx/snap)*snap,scz=Math.round(cam.tz/snap)*snap;
-  const key=scx.toFixed(2)+'|'+scz.toFixed(2)+'|'+hs.toFixed(2)+'|'+houseVer;shFr++;const sunMoved=Math.abs(L.sun[0]-shSun[0])+Math.abs(L.sun[1]-shSun[1])+Math.abs(L.sun[2]-shSun[2])>0.0004;
-  if(key!==shKey||(sunMoved&&shFr>=2)){shKey=key;shFr=0;shSun=L.sun.slice();shHS=hs;shC=[scx,Math.max(0.3,hAt(scx,scz)),scz];const le=add(shC,scl(L.sun,40));LVP=mmul(ortho(-hs,hs,-hs,hs,1,90),lookAt(le,shC,Math.abs(L.sun[1])>0.98?[1,0,0]:[0,1,0]));
-    gl.bindFramebuffer(gl.FRAMEBUFFER,shadowFB);gl.viewport(0,0,SM,SM);gl.clear(gl.DEPTH_BUFFER_BIT);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(2.0,4.0);
-    gl.useProgram(P.sh.p);gl.uniformMatrix4fv(P.sh.u.uLVP,false,LVP);drawMeshes(P.sh,true);
-    const lr=nrm(cross([0,1,0],L.sun));drawBB(P.bbsh,lr,[0,1,0],LVP);gl.disable(gl.POLYGON_OFFSET_FILL);}
-  // scène
-  const useTS=tiltOn&&cam.dist>8.05&&tsPrep();gl.bindFramebuffer(gl.FRAMEBUFFER,useTS?TSH.ms:null);gl.viewport(0,0,cv.width,cv.height);gl.clearColor(L.fog[0],L.fog[1],L.fog[2],1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,shadowTex);
-  gl.disable(gl.DEPTH_TEST);gl.depthMask(false);gl.useProgram(P.sky.p);setCommon(P.sky);gl.uniformMatrix4fv(P.sky.u.uIVP,false,iVP);gl.uniform1f(P.sky.u.uTime,elapsed);gl.bindVertexArray(null);gl.drawArrays(gl.TRIANGLES,0,3);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);
-  drawMeshes(P.mesh,false);
-  const up=nrm([lerp(0,camUp[0],0.75),lerp(1,camUp[1],0.75),lerp(0,camUp[2],0.75)]);drawBB(P.bb,camRight,up,VP);
-  // eau
-  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
-  gl.useProgram(P.w.p);setCommon(P.w);gl.uniform1f(P.w.u.uTime,elapsed);
-  gl.uniform1f(P.w.u.uRiver,0);gl.bindVertexArray(MESH.sea.vao);gl.drawElements(gl.TRIANGLES,MESH.sea.n,gl.UNSIGNED_INT,0);
-  gl.uniform1f(P.w.u.uRiver,1);gl.bindVertexArray(MESH.river.vao);gl.drawElements(gl.TRIANGLES,MESH.river.n,gl.UNSIGNED_INT,0);
-  // halos de nuit
-  if(L.night>0.05&&glCount){gl.blendFunc(gl.ONE,gl.ONE);gl.useProgram(P.gl.p);gl.uniformMatrix4fv(P.gl.u.uVP,false,VP);gl.uniform1f(P.gl.u.uPx,cv.height/(2*Math.tan(cam.fov*Math.PI/360)));gl.uniform1f(P.gl.u.uNight,L.night);gl.uniform1f(P.gl.u.uHour,G.t*24);gl.bindVertexArray(GLB.vao);gl.drawArrays(gl.POINTS,0,glCount);
-    if(LH){if(!BEAM){BEAM={vao:gl.createVertexArray(),b:gl.createBuffer()};gl.bindVertexArray(BEAM.vao);gl.bindBuffer(gl.ARRAY_BUFFER,BEAM.b);gl.bufferData(gl.ARRAY_BUFFER,beamData.byteLength,gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,32,0);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,4,gl.FLOAT,false,32,12);gl.enableVertexAttribArray(2);gl.vertexAttribPointer(2,1,gl.FLOAT,false,32,28);}
-      const an=elapsed*0.9;let q=0;const put=(a)=>{beamData.set(a,q*8);q++;};put([LH[0],LH[1],LH[2],7,1.8,1.55,1.0,-1]);put([LH[0],LH[1],LH[2],20,0.6,0.5,0.32,-1]);put([LH[0],LH[1],LH[2],42,0.22,0.19,0.13,-1]);
-      for(const sd of [1,-1])for(let k=1;k<=30;k++){const t=k/30;const f=(1-t)*(1-t);put([LH[0]+Math.cos(an)*sd*k*0.32,LH[1]-0.012*k,LH[2]+Math.sin(an)*sd*k*0.32,1.6+k*0.12,0.42*f+0.02,0.37*f+0.02,0.25*f+0.015,-1]);}
-      gl.bindVertexArray(BEAM.vao);gl.bindBuffer(gl.ARRAY_BUFFER,BEAM.b);gl.bufferSubData(gl.ARRAY_BUFFER,0,beamData);gl.disable(gl.DEPTH_TEST);gl.drawArrays(gl.POINTS,0,q);gl.enable(gl.DEPTH_TEST);}}
-  gl.depthMask(true);gl.disable(gl.BLEND);gl.bindVertexArray(null);
-  if(useTS)tsPost();
-  drawHL();
+  // Rendu final exclusivement assuré par Three.js.
+  // L'ancien pipeline GLSL ne dessine plus aucune frame : ses fonctions
+  // restantes ne servent temporairement qu'à préparer les géométries CPU.
+  if(!T3||!T3.ready)return;
+  renderThree();
   drawUI();
 }
 /* ---------------- TILT-SHIFT ---------------- */
