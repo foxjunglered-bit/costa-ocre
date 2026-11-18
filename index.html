@@ -1340,6 +1340,56 @@ function buildHouse(B){if(B.special){buildSpecial(B);return;}
   if(lv>=2){[[i0-0.035,j0-0.035,i1+0.035,j1+0.035]].forEach(b=>mb.box(b[0],y1-0.07,b[1],b[2],y1,b[3],{l:TL.SLAB,c:C3(lv===3?'#efe2c4':'#bba88a')},false,0.3));
     if(lv>=3)mb.box(i0-0.03,y0-0.6,j0-0.03,i1+0.03,y0+0.12,j1+0.03,{l:TL.RSTONE,c:[0.95,0.9,0.85]},false,0.5);
     const gc={l:TL.WHITE,c:C3(lv===4?'#d0d4d8':'#5a5650')};mb.box(i1+0.03,y0,j1+0.02,i1+0.06,y1,j1+0.05,gc,gc,0.2);mb.box(i0-0.06,y1-0.01,j1+0.06,i1+0.06,y1+0.025,j1+0.1,gc,gc,0.2);mb.box(i1+0.06,y1-0.01,j0-0.06,i1+0.1,y1+0.025,j1+0.06,gc,gc,0.2);}
+  // NOUVEAU MODELE VILLAGEOIS : entree en plein cintre, encadrement en pierre et porte coloree.
+  // Ce volume architectural est construit en vraie geometrie (pas en simple decalque de texture).
+  if(lv>=1&&!isShop(B)){
+    const archF=face(d,'+j',i0,j0,i1,j1),doorS=0.5;
+    const doorW=Math.min(0.145,0.34/(i1-i0)),spring=y0+FH*0.59,archH=doorW*(i1-i0)*0.92;
+    const zOff=0.105,stoneMat={l:TL.SLAB,c:C3('#e7d6b8')},stoneAlt={l:TL.RSTONE,c:C3('#c8b18f')};
+    const doorMat={l:TL.DOOR,c:C3(['#527f9b','#527b70','#a65f45','#6b6d9b'][B.idx%4])};
+    const pL=archF(doorS-doorW,y0,zOff),pR=archF(doorS+doorW,y0,zOff);
+    const pSL=archF(doorS-doorW,spring,zOff),pSR=archF(doorS+doorW,spring,zOff);
+    mb.quad(pL,pR,pSR,pSL,{...doorMat,out:[0,0,1],uv:[[0,1],[1,1],[1,0],[0,0]]});
+    const segs=12;
+    for(let k=0;k<segs;k++){
+      const a0=Math.PI*k/segs,a1=Math.PI*(k+1)/segs;
+      const inner=(a)=>archF(doorS+Math.cos(a)*doorW,spring+Math.sin(a)*archH,zOff+0.012);
+      const outer=(a)=>archF(doorS+Math.cos(a)*(doorW+0.042/(i1-i0)),spring+Math.sin(a)*(archH+0.042),zOff+0.018);
+      mb.quad(inner(a0),inner(a1),outer(a1),outer(a0),{...(k%2?stoneMat:stoneAlt),out:[0,0,1]});
+    }
+    // Piedroits en blocs, clef de voute et seuil en pierre claire.
+    for(let side of [-1,1])for(let k=0;k<3;k++){
+      const u=doorS+side*(doorW+0.045/(i1-i0));
+      const ya=y0+k*FH*0.205;
+      frect(mb,archF,u-0.035/(i1-i0),u+0.035/(i1-i0),ya,ya+FH*0.19,zOff+0.018,k%2?stoneMat:stoneAlt,'+j');
+    }
+    const key=archF(doorS,spring+archH+0.025,zOff+0.025);
+    mb.box(key[0]-0.055,key[1]-0.045,key[2]-0.025,key[0]+0.055,key[1]+0.045,key[2]+0.035,stoneMat,null,0.12);
+    const sill=archF(doorS,y0+0.015,zOff+0.025);
+    mb.box(sill[0]-doorW*(i1-i0)-0.07,y0-0.035,sill[2]-0.055,sill[0]+doorW*(i1-i0)+0.07,y0+0.045,sill[2]+0.035,stoneMat,null,0.12);
+    const handle=archF(doorS+doorW*0.48,spring*0.42+y0*0.58,zOff+0.035);
+    mb.cyl(handle[0],handle[1],handle[2],0.018,0.018,0.025,8,{l:TL.WHITE,c:C3('#c79a48')});
+    // Reliefs de facade : bandeau de pierre, petite corniche et consoles sous les avant-toits.
+    const cornY=y1-0.035;
+    mb.box(i0-0.12,cornY,j1+0.035,i1+0.12,cornY+0.075,j1+0.16,stoneMat,null,0.18);
+    for(const x of [i0+0.12,i1-0.12]){
+      mb.box(x-0.045,y1-0.24,j1+0.04,x+0.045,y1-0.04,j1+0.13,stoneAlt,null,0.14);
+    }
+    // Fenetres a arc sur les petits pignons : une silhouette differente selon la categorie.
+    if(fl>=2){
+      const winY=y0+FH*1.28,winS=0.24,winW=Math.min(0.085,0.17/(i1-i0)),winH=winW*(i1-i0)*0.9;
+      for(const ws of [winS,1-winS]){
+        const l=archF(ws-winW,winY,zOff),r=archF(ws+winW,winY,zOff),sl=archF(ws-winW,winY+winH*0.72,zOff),sr=archF(ws+winW,winY+winH*0.72,zOff);
+        mb.quad(l,r,sr,sl,{l:TL.GLASS,c:[0.38,0.57,0.62],out:[0,0,1]});
+        for(let k=0;k<8;k++){
+          const a0=Math.PI*k/8,a1=Math.PI*(k+1)/8;
+          const q=(a)=>archF(ws+Math.cos(a)*winW,winY+winH*0.72+Math.sin(a)*winH*0.52,zOff+0.02);
+          const o=(a)=>archF(ws+Math.cos(a)*(winW+0.022/(i1-i0)),winY+winH*0.72+Math.sin(a)*(winH*0.52+0.022),zOff+0.025);
+          mb.quad(q(a0),q(a1),o(a1),o(a0),{...stoneMat,out:[0,0,1]});
+        }
+      }
+    }
+  }
   // toits
   let top=y1;
   if(lv<=1){const along=(i1-i0)>=(j1-j0),rh=0.2,o=0.08,mat=lv?{l:TL.TILE,c:[1,0.94,0.88]}:{l:TL.TIN,c:[0.75,0.62,0.55]};
