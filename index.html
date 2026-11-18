@@ -2383,7 +2383,7 @@ let started=false;
 function prepare(){if(!gl){$('loading').textContent='Ton navigateur ne gère pas la 3D (WebGL2). Mets à jour ton téléphone ou essaie Chrome/Safari récent.';return;}
   resize();load();initGL();ready=true;$('loading').style.display='none';if(unlocked)startGame();}
 setTimeout(()=>{try{prepare();}catch(e){$('loading').textContent='Erreur : '+e.message;console.error(e);}},50);
-function startGame(){if(!ready||started)return;started=true;setTimeout(newsPop,1200);setTimeout(infoAuto,1500);resize();recompute();BLD.forEach(B=>{if(B.meshLv!==B.lvl)buildHouse(B);});buildBillboards();buildGlows();{const C=CHURCH;CAM0.tx=cam.tx=(C.i0+C.i1)/2+0.5;CAM0.tz=cam.tz=(C.j0+C.j1)/2;CAM0.dist=cam.dist=W<H?8.8:7.6;CAM0.pitch=cam.pitch=34;CAM0.yaw=cam.yaw=yawT=Math.PI/2;}clampCam();updateHud();
+function startGame(){if(!ready||started)return;started=true;setTimeout(newsPop,1200);setTimeout(infoAuto,1500);resize();recompute();BLD.forEach(B=>{if(B.meshLv!==B.lvl)buildHouse(B);});buildBillboards();buildGlows();{const C=CHURCH;CAM0.tx=cam.tx=(C.i0+C.i1)/2+0.35;CAM0.tz=cam.tz=(C.j0+C.j1)/2+0.05;CAM0.dist=cam.dist=W<H?12.4:10.8;CAM0.pitch=cam.pitch=37;CAM0.yaw=cam.yaw=yawT=1.2;}clampCam();updateHud();
   if(!BLD.some(B=>B.owned&&!B.home))setTimeout(()=>toast('Coupe du bois 🪓 pour gagner tes premiers dollars'),900);requestAnimationFrame(t=>{last=t;loop(t);});}
 </script>
 </body>
