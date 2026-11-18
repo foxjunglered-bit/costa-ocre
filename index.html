@@ -1810,7 +1810,7 @@ function drawBB(pr,right,up,mVP){gl.useProgram(pr.p);if(pr===P.bb)setCommon(pr);
 /* ---------------- NOUVEAU RENDU THREE.JS ----------------
    Le monde et sa logique sont conservés, mais le rendu final passe
    par Three.js : matériaux PBR, éclairage physique et ombres douces. */
-let T3=null,T3scene=null,T3camera=null,T3renderer=null,T3world=null,T3buildings=new Map(),T3boats=[];
+let T3=null,T3scene=null,T3camera=null,T3renderer=null,T3world=null,T3buildings=new Map(),T3boats=[],T3sun=null,T3hemi=null,T3fill=null;
 let T3traffic={ready:false,cars:[],peds:[]},T3woodcutter=null;
 function t3Geometry(m,terrain=false){
   if(!m||!m.cpuV||!m.cpuIx)return null;
@@ -1922,9 +1922,9 @@ function initThreeRenderer(){
   T3scene=new T3.Scene();T3scene.background=new T3.Color('#b9c9c5');T3scene.fog=new T3.Fog('#c5d0bd',48,145);
   T3camera=new T3.PerspectiveCamera(cam.fov,innerWidth/innerHeight,0.35,1400);
   T3world=new T3.Group();T3scene.add(T3world);
-  const hemi=new T3.HemisphereLight('#fff3d9','#8d886b',1.45);T3scene.add(hemi);
-  const sun=new T3.DirectionalLight('#fff0d7',3.0);sun.position.set(-34,58,26);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-75;sun.shadow.camera.right=75;sun.shadow.camera.top=75;sun.shadow.camera.bottom=-75;sun.shadow.bias=-0.00018;sun.shadow.normalBias=0.025;sun.shadow.radius=4;T3scene.add(sun);
-  const fill=new T3.DirectionalLight('#c6dcff',0.55);fill.position.set(35,22,-35);T3scene.add(fill);
+  const hemi=new T3.HemisphereLight('#fff3d9','#8d886b',1.45);T3scene.add(hemi);T3hemi=hemi;
+  const sun=new T3.DirectionalLight('#fff0d7',3.0);sun.position.set(-34,58,26);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-75;sun.shadow.camera.right=75;sun.shadow.camera.top=75;sun.shadow.camera.bottom=-75;sun.shadow.bias=-0.00018;sun.shadow.normalBias=0.025;sun.shadow.radius=4;T3scene.add(sun);T3sun=sun;
+  const fill=new T3.DirectionalLight('#c6dcff',0.55);fill.position.set(35,22,-35);T3scene.add(fill);T3fill=fill;
   const px=THREE_TEX_PIXELS;
   const tex=[];for(let l=0;l<TEXN;l++){const c=document.createElement('canvas');c.width=TS;c.height=TS;const x=c.getContext('2d'),im=x.createImageData(TS,TS),off=l*TS*TS*4;im.data.set(px.subarray(off,off+TS*TS*4));x.putImageData(im,0,0);const t=new T3.CanvasTexture(c);t.colorSpace=T3.SRGBColorSpace;t.wrapS=t.wrapT=T3.RepeatWrapping;t.anisotropy=Math.min(8,T3renderer.capabilities.getMaxAnisotropy());tex.push(t);}
   T3.materials=tex.map((map)=>new T3.MeshStandardMaterial({map,vertexColors:true,roughness:0.88,metalness:0.0}));
@@ -1949,6 +1949,11 @@ function initThreeRenderer(){
 function renderThree(){
   if(!T3||!T3.ready)return;
   updateLight();updateCamera();t3SyncBuildings();t3UpdateTraffic();t3UpdateBoats();t3SyncWoodcutter();
+  if(T3sun){T3sun.position.set(-L.sun[0]*65,L.sun[1]*65,-L.sun[2]*65);T3sun.color.setRGB(...L.sunCol);T3sun.intensity=2.65;}
+  if(T3hemi){T3hemi.color.setRGB(...L.sky);T3hemi.groundColor.setRGB(...L.gnd);T3hemi.intensity=1.45;}
+  if(T3fill){T3fill.intensity=0.18+L.night*0.42;T3fill.color.setRGB(0.58,0.68,0.92);}
+  T3scene.background.setRGB(...L.sky.map(v=>Math.min(1,v*1.65)));
+  T3scene.fog.color.setRGB(...L.fog);T3scene.fog.near=cam.dist*1.7+14;T3scene.fog.far=cam.dist*4.2+65;
   T3camera.fov=cam.fov;T3camera.aspect=W/H;T3camera.position.set(eye[0],eye[1],eye[2]);T3camera.up.set(0,1,0);T3camera.lookAt(cam.tx,cam.ty,cam.tz);T3camera.updateProjectionMatrix();T3camera.updateMatrixWorld(true);
   VP=mmul(new Float32Array(T3camera.projectionMatrix.elements),new Float32Array(T3camera.matrixWorldInverse.elements));iVP=minv(VP);
   camRight=[T3camera.matrixWorld.elements[0],T3camera.matrixWorld.elements[1],T3camera.matrixWorld.elements[2]];camUp=[T3camera.matrixWorld.elements[4],T3camera.matrixWorld.elements[5],T3camera.matrixWorld.elements[6]];
