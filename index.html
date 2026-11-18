@@ -1521,6 +1521,7 @@ const BOATS=[{i:17.0,j:9.1,ry:-0.9,col:'#1d6fb8'},{i:18.6,j:10.6,ry:-0.6,col:'#c
 
 /* ---------------- VÉGÉTATION : placement ---------------- */
 let BBI=null,bbCount=0;const vegList=[];
+function countryOK(i,j){const P=parcelAtPt(i,j);return !!P&&!P.dead&&P.kind==='country';}
 function placeVeg(){const r=rng(77);
   const add=(i,j,name,sc)=>{const s=SP[name];vegList.push([i,hAt(i,j),j,s.w/48*sc,s.h/48*sc,(s.h-s.ay)/s.h,...s.rect]);};
   const ok=(i,j)=>{const h=hAt(i,j);if(h<0.15)return false;if(riverDist(i,j)<0.25)return false;if(blocked(i,j))return false;const sd=shoreD(i,j);if(j>SJ(20.5)&&j<PROP.j0&&sd<3.4)return false;if(propW(i,j)>0.5&&r()<0.985)return false;return true;};
