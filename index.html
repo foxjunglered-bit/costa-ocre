@@ -1147,37 +1147,105 @@ function bridge(mb,s,w){
       mb.quad([ai[0],s[k].y,ai[1]],[bi[0],s[k+1].y,bi[1]],[bi[0],s[k+1].y+0.22,bi[1]],[ai[0],s[k].y+0.22,ai[1]],{l:TL.ASHLAR,c:scl(st,0.9),uv:[[0,0.4],[0.3,0.4],[0.3,0],[0,0]]});u+=L;}
     for(let k=0;k<n-1;k++){const a=side(s[k],1,w+0.09),b=side(s[k+1],1,w+0.09),c=side(s[k+1],-1,w+0.09),d=side(s[k],-1,w+0.09);if(sd>0)mb.quad([a[0],arch(k),a[1]],[b[0],arch(k+1),b[1]],[c[0],arch(k+1),c[1]],[d[0],arch(k),d[1]],{l:TL.ASHLAR,c:scl(st,0.7),out:[0,-1,0]});}
   });}
-function church(mb){const C=CHURCH,y0=hAt((C.i0+C.i1)/2,(C.j0+C.j1)/2)-0.3,h=1.75,st={l:TL.ASHLAR,c:C3('#f4e2c0')};
-  mb.box(C.i0,y0,C.j0,C.i1,y0+0.3+h,C.j1,st,false,0.7);const yt=y0+0.3+h;
-  // toit à deux pans (faîte selon i) en tuiles
-  const o=0.18,jm=(C.j0+C.j1)/2,rh=0.78;roof2(mb,C.i0-o,C.j0-o,C.i1+o,C.j1+o,yt,rh,true,{l:TL.TILE,c:C3('#bd6545')},st);
-  // corniche en pierre, gouttières et bandeau de façade
-  mb.box(C.i0-0.12,yt-0.08,C.j0-0.12,C.i1+0.12,yt+0.06,C.j1+0.12,{l:TL.SLAB,c:C3('#ead9bb')},null,0.35);
-  mb.box(C.i0-0.13,y0+0.48,C.j0-0.13,C.i1+0.13,y0+0.58,C.j1+0.13,{l:TL.SLAB,c:C3('#d6c19c')},null,0.25);
-  // façade (+i) : porte, rosace, pilastres
-  const fx=C.i1+0.012;mb.quad([fx,y0+0.3,jm-0.22],[fx,y0+0.3,jm+0.22],[fx,y0+1.15,jm+0.22],[fx,y0+1.15,jm-0.22],{l:TL.DOOR,c:[0.9,0.8,0.7],out:[1,0,0]});
-  // portail provençal cintré en voussoirs, jambages et clé de voûte (géométrie réelle)
-  const doorW=0.54,doorB=y0+0.3,doorTop=y0+1.13,archR=doorW/2,front=C.i1+0.075;
-  mb.box(front-0.08,doorB,jm-doorW/2-0.12,front+0.08,doorTop,jm-doorW/2,{l:TL.SLAB,c:C3('#d9c7a7')},null,0.22);
-  mb.box(front-0.08,doorB,jm+doorW/2,front+0.08,doorTop,jm+doorW/2+0.12,{l:TL.SLAB,c:C3('#d9c7a7')},null,0.22);
-  for(let k=0;k<11;k++){const a0=Math.PI*k/11,a1=Math.PI*(k+1)/11,mid=(a0+a1)/2;
-    const p0=[front,doorTop+Math.sin(a0)*archR,jm+Math.cos(a0)*archR],p1=[front,doorTop+Math.sin(a1)*archR,jm+Math.cos(a1)*archR],pm=[front+0.04,doorTop+Math.sin(mid)*(archR+0.1),jm+Math.cos(mid)*(archR+0.1)];
-    mb.quad(p0,pm,p1,[front-0.05,pm[1],pm[2]],{l:TL.SLAB,c:C3(k===5?'#f3e5ca':'#d8c5a4'),out:[1,0,0]});}
-  mb.box(front+0.015,doorTop+archR-0.01,jm-0.055,front+0.11,doorTop+archR+0.12,jm+0.055,{l:TL.SLAB,c:C3('#f8e8c8')},null,0.2);
-  // deux colonnettes et chapiteaux
-  [jm-doorW/2-0.19,jm+doorW/2+0.13].forEach(z=>{mb.cyl(front+0.04,doorB+0.48,z,0.055,0.055,0.96,10,{l:TL.SLAB,c:C3('#e8d6b7')});mb.box(front-0.035,doorB+0.92,z-0.11,front+0.13,doorB+1.02,z+0.11,{l:TL.SLAB,c:C3('#f0dfc1')},null,0.2);});
-  const rc=[fx+0.005,y0+1.55,jm];const rr=0.26;for(let k=0;k<16;k++){const a0=k/16*6.283,a1=(k+1)/16*6.283;mb.tri(rc,[rc[0],rc[1]+Math.sin(a0)*rr,rc[2]+Math.cos(a0)*rr],[rc[0],rc[1]+Math.sin(a1)*rr,rc[2]+Math.cos(a1)*rr],{l:TL.GLASS,c:C3('#c8d8f0'),em:1,out:[1,0,0],uv:[[0.5,0.5],[0.5+Math.cos(a0)*0.4,0.5+Math.sin(a0)*0.4],[0.5+Math.cos(a1)*0.4,0.5+Math.sin(a1)*0.4]]});}
-  GLOWS.push([rc[0]+0.1,rc[1],rc[2],1.6,0.4,0.32,0.22]);
-  [C.j0+0.05,jm-0.45,jm+0.35,C.j1-0.15].forEach(j=>mb.box(C.i1,y0+0.3,j,C.i1+0.06,yt,j+0.1,st,null,0.5));
-  for(let k=0;k<3;k++){const i=C.i0+0.35+k*0.45;mb.quad([i-0.09,y0+0.9,C.j1+0.012],[i+0.09,y0+0.9,C.j1+0.012],[i+0.09,y0+1.55,C.j1+0.012],[i-0.09,y0+1.55,C.j1+0.012],{l:TL.GLASS,c:C3('#c8d8f0'),em:1,out:[0,0,1]});}
-  // campanile
-  const T=[C.ti0,C.tj0,C.ti1,C.tj1],th=4.1;mb.box(T[0],y0,T[1],T[2],y0+th,T[3],{l:TL.ASHLAR,c:C3('#ecd3a8')},false,0.6);
-  [1.6,3.2,th].forEach(hh=>mb.box(T[0]-0.04,y0+hh-0.06,T[1]-0.04,T[2]+0.04,y0+hh+0.02,T[3]+0.04,st,st,0.4));
-  const bo=y0+th-0.75;[[T[2]+0.01,(T[1]+T[3])/2,'i'],[(T[0]+T[2])/2,T[3]+0.01,'j']].forEach(([a,b,ax])=>{for(let m=-1;m<=1;m+=2){const off=m*0.13;if(ax==='i')mb.quad([a,bo,b+off-0.08],[a,bo,b+off+0.08],[a,bo+0.5,b+off+0.08],[a,bo+0.5,b+off-0.08],{l:TL.WHITE,c:C3('#1a140e'),out:[1,0,0]});else mb.quad([a+off-0.08,bo,b],[a+off+0.08,bo,b],[a+off+0.08,bo+0.5,b],[a+off-0.08,bo+0.5,b],{l:TL.WHITE,c:C3('#1a140e'),out:[0,0,1]});}
-    const cy=y0+th-1.15;if(ax==='i')mb.quad([a+0.003,cy-0.13,b-0.13],[a+0.003,cy-0.13,b+0.13],[a+0.003,cy+0.13,b+0.13],[a+0.003,cy+0.13,b-0.13],{l:TL.WHITE,c:C3('#f8f2e6'),out:[1,0,0]});else mb.quad([a-0.13,cy-0.13,b+0.003],[a+0.13,cy-0.13,b+0.003],[a+0.13,cy+0.13,b+0.003],[a-0.13,cy+0.13,b+0.003],{l:TL.WHITE,c:C3('#f8f2e6'),out:[0,0,1]});});
-  const ap=[(T[0]+T[2])/2,y0+th+0.75,(T[1]+T[3])/2],q=[[T[0]-0.05,T[1]-0.05],[T[2]+0.05,T[1]-0.05],[T[2]+0.05,T[3]+0.05],[T[0]-0.05,T[3]+0.05]];
-  for(let k=0;k<4;k++){const a=q[k],b=q[(k+1)%4];mb.tri([a[0],y0+th+0.02,a[1]],[b[0],y0+th+0.02,b[1]],ap,{l:TL.TILE,c:[1,0.92,0.88],out:[(a[0]+b[0])/2-ap[0],0.3,(a[1]+b[1])/2-ap[2]],uv:[[0,2],[2,2],[1,0]]});}
-  mb.box(ap[0]-0.012,ap[1],ap[2]-0.012,ap[0]+0.012,ap[1]+0.32,ap[2]+0.012,{l:TL.WHITE,c:C3('#3a3020')},null,0.2);mb.box(ap[0]-0.012,ap[1]+0.2,ap[2]-0.09,ap[0]+0.012,ap[1]+0.23,ap[2]+0.09,{l:TL.WHITE,c:C3('#3a3020')},null,0.2);
+function church(mb){
+  // Nouvelle église provençale : basilique à nef, bas-côtés, abside,
+  // grand portail cintré, rosace, contreforts et clocher indépendant.
+  const C=CHURCH,ci=(C.i0+C.i1)/2,cj=(C.j0+C.j1)/2;
+  const y=hAt(ci,cj)-0.28, stone={l:TL.ASHLAR,c:C3('#e8d5b2')},
+    trim={l:TL.SLAB,c:C3('#f4e7ce')},wall={l:TL.PLASTER,c:C3('#f0dfbd')},
+    tile={l:TL.TILE,c:C3('#b9573d')},dark={l:TL.DOOR,c:C3('#654331')};
+  const x0=C.i0-0.72,x1=C.i1+0.48,z0=C.j0-0.62,z1=C.j1+0.62;
+  const floor=y+0.16,wallTop=floor+2.18;
+  // Parvis et socle en pierre claire
+  mb.box(x0-0.28,y-0.06,z0-0.22,x1+0.18,y+0.13,z1+0.22,stone,null,0.55);
+  mb.box(x0-0.12,y+0.13,z0-0.12,x1+0.08,floor,z1+0.12,trim,null,0.45);
+  // Corps principal de la nef, avec volume distinct des bas-côtés
+  mb.box(x0,floor,z0,x1,wallTop,z1,wall,null,0.65);
+  mb.box(x0-0.04,floor+0.42,z0-0.04,x1+0.04,floor+0.54,z1+0.04,stone,null,0.4);
+  mb.box(x0-0.1,wallTop-0.08,z0-0.1,x1+0.1,wallTop+0.08,z1+0.1,trim,null,0.35);
+  // Bas-côtés latéraux en volumes plus bas
+  const aisleH=1.42;
+  mb.box(x0-0.18,floor,z0-0.42,x1-0.05,floor+aisleH,z0+0.02,wall,null,0.5);
+  mb.box(x0-0.18,floor,z1-0.02,x1-0.05,floor+aisleH,z1+0.42,wall,null,0.5);
+  roof4(mb,x0-0.25,z0-0.48,x1-0.02,z0+0.08,floor+aisleH,0.42,tile);
+  roof4(mb,x0-0.25,z1-0.08,x1-0.02,z1+0.48,floor+aisleH,0.42,tile);
+  // Grand toit provençal à deux pans, faîtage bien visible
+  roof2(mb,x0-0.22,z0-0.2,x1+0.18,z1+0.2,wallTop+0.06,0.92,true,tile,stone);
+  // Abside à l'arrière : volume arrondi segmenté, et petit toit conique facetté
+  const ax=x0-0.38, ar=(z1-z0)*0.36, acz=cj, abase=floor, ah=1.78;
+  mb.box(ax-0.46,abase,acz-ar,ax,abase+ah,acz+ar,wall,null,0.5);
+  for(let k=0;k<9;k++){
+    const a0=-Math.PI/2+k*Math.PI/9,a1=-Math.PI/2+(k+1)*Math.PI/9;
+    const p0=[ax,abase,acz+Math.sin(a0)*ar],p1=[ax,abase,acz+Math.sin(a1)*ar];
+    const q0=[ax,abase+ah,acz+Math.sin(a0)*ar],q1=[ax,abase+ah,acz+Math.sin(a1)*ar];
+    mb.quad(p0,p1,q1,q0,{l:TL.PLASTER,c:C3('#f0dfbd'),out:[-1,0,0]});
+    const mid=(a0+a1)/2,tip=[ax-0.48,abase+ah+0.42,acz+Math.sin(mid)*ar*0.98];
+    mb.tri(q0,q1,tip,tile);
+  }
+  // Contreforts massifs sur les deux côtés
+  for(let k=0;k<4;k++){
+    const xx=x0+0.18+k*0.52;
+    for(const zz of [z0-0.12,z1+0.02]){
+      mb.box(xx-0.11,floor,zz-0.12,xx+0.11,wallTop-0.08,zz+0.12,stone,null,0.28);
+      mb.box(xx-0.16,wallTop-0.18,zz-0.16,xx+0.16,wallTop+0.02,zz+0.16,trim,null,0.25);
+    }
+  }
+  // Fenêtres hautes en plein cintre sur les flancs
+  for(let k=0;k<4;k++){
+    const xx=x0+0.38+k*0.52;
+    for(const zz of [z0-0.014,z1+0.014]){
+      mb.box(xx-0.105,floor+1.18,zz-0.035,xx+0.105,floor+1.78,zz+0.035,{l:TL.GLASS,c:C3('#9fc4d2'),em:0.16},null,0.15);
+      mb.box(xx-0.15,floor+1.13,zz-0.07,xx-0.105,floor+1.82,zz+0.07,trim,null,0.2);
+      mb.box(xx+0.105,floor+1.13,zz-0.07,xx+0.15,floor+1.82,zz+0.07,trim,null,0.2);
+      mb.box(xx-0.15,floor+1.78,zz-0.07,xx+0.15,floor+1.84,zz+0.07,trim,null,0.2);
+    }
+  }
+  // Façade principale tournée vers la place (+i)
+  const front=x1+0.025,doorZ=cj,doorW=0.62,doorBase=floor;
+  mb.box(front, floor, z0-0.08, front+0.18, wallTop, z1+0.08, wall, null,0.5);
+  // Portail profond, vantaux bois, encadrement et voussoirs en pierre
+  mb.box(front+0.015,doorBase,doorZ-doorW/2-0.12,front+0.22,doorBase+1.22,doorZ-doorW/2,stone,null,0.2);
+  mb.box(front+0.015,doorBase,doorZ+doorW/2,front+0.22,doorBase+1.22,doorZ+doorW/2+0.12,stone,null,0.2);
+  mb.box(front+0.12,doorBase,doorZ-doorW/2,front+0.2,doorBase+1.12,doorZ+doorW/2,dark,null,0.25);
+  for(let k=0;k<11;k++){
+    const a0=Math.PI*k/11,a1=Math.PI*(k+1)/11,am=(a0+a1)/2,r=doorW/2;
+    const p0=[front+0.22,doorBase+1.1+Math.sin(a0)*r,doorZ+Math.cos(a0)*r];
+    const p1=[front+0.22,doorBase+1.1+Math.sin(a1)*r,doorZ+Math.cos(a1)*r];
+    const pm=[front+0.3,doorBase+1.1+Math.sin(am)*(r+0.12),doorZ+Math.cos(am)*(r+0.12)];
+    mb.quad(p0,pm,p1,[front+0.12,pm[1],pm[2]],{l:TL.SLAB,c:C3(k===5?'#fff0d5':'#d8c29d'),out:[1,0,0]});
+  }
+  mb.box(front+0.26,doorBase+1.17,doorZ-0.07,front+0.34,doorBase+1.31,doorZ+0.07,trim,null,0.15);
+  // Marches et poignée
+  for(let k=0;k<3;k++)mb.box(front+0.2+k*0.12,doorBase-0.1-k*0.07,doorZ-0.48-k*0.08,front+0.42+k*0.12,doorBase-k*0.07,doorZ+0.48+k*0.08,stone,null,0.3);
+  mb.cyl(front+0.36,doorBase+0.57,doorZ+0.18,0.035,0.035,0.035,8,{l:TL.WHITE,c:C3('#d6ad55')});
+  // Rosace circulaire au-dessus du portail
+  const roseX=front+0.035,roseY=wallTop-0.48,rr=0.34;
+  for(let k=0;k<20;k++){
+    const a0=k/20*Math.PI*2,a1=(k+1)/20*Math.PI*2;
+    mb.tri([roseX,roseY,doorZ],[roseX,roseY+Math.sin(a0)*rr,doorZ+Math.cos(a0)*rr],[roseX,roseY+Math.sin(a1)*rr,doorZ+Math.cos(a1)*rr],{l:TL.GLASS,c:C3(k%2?'#9fc8d7':'#d7e6e6'),em:0.35,out:[1,0,0]});
+  }
+  mb.cyl(roseX+0.015,roseY,doorZ,0.39,0.39,0.045,20,trim);
+  // Pilastres, corniche et fronton triangulaire
+  for(const zz of [doorZ-0.82,doorZ+0.72]){
+    mb.box(front+0.08,floor,zz-0.07,front+0.22,wallTop-0.08,zz+0.07,stone,null,0.22);
+    mb.box(front+0.04,wallTop-0.2,zz-0.13,front+0.27,wallTop-0.08,zz+0.13,trim,null,0.2);
+  }
+  mb.box(front+0.02,wallTop-0.04,z0-0.2,front+0.28,wallTop+0.12,z1+0.2,trim,null,0.3);
+  mb.tri([front+0.03,wallTop+0.12,z0-0.18],[front+0.03,wallTop+0.12,z1+0.18],[front+0.03,wallTop+0.82,cj],{l:TL.PLASTER,c:C3('#ead5ae'),out:[1,0,0]});
+  mb.tri([front+0.08,wallTop+0.18,z0+0.04],[front+0.08,wallTop+0.18,z1-0.04],[front+0.08,wallTop+0.68,cj],{l:TL.SLAB,c:C3('#d9c29d'),out:[1,0,0]});
+  // Clocher carré indépendant, deux étages d'arcades et toit pyramidal en tuiles
+  const tx=C.i1+0.48,tz=z1-0.04,tw=0.72,ty=floor;
+  mb.box(tx,ty,tz-tw/2,tx+tw,ty+3.35,tz+tw/2,wall,null,0.45);
+  [0.16,1.35,2.68,3.28].forEach(hh=>mb.box(tx-0.08,ty+hh,tz-tw/2-0.08,tx+tw+0.08,ty+hh+0.12,tz+tw/2+0.08,trim,null,0.25));
+  for(const side of [0,1]){
+    const xx=side?tx+tw+0.012:tx-0.012;
+    mb.box(xx-0.015,ty+2.02,tz-0.16,xx+0.015,ty+2.62,tz+0.16,{l:TL.GLASS,c:C3('#302b28')},null,0.15);
+    mb.box(xx-0.02,ty+1.96,tz-0.2,xx+0.02,ty+2.04,tz+0.2,stone,null,0.15);
+    mb.box(xx-0.02,ty+2.62,tz-0.2,xx+0.02,ty+2.7,tz+0.2,stone,null,0.15);
+  }
+  roof4(mb,tx-0.12,tz-tw/2-0.12,tx+tw+0.12,tz+tw/2+0.12,ty+3.4,0.68,tile);
+  mb.box(tx+tw/2-0.025,ty+4.08,tz-0.025,tx+tw/2+0.025,ty+4.5,tz+0.025,{l:TL.WHITE,c:C3('#493a2b')},null,0.12);
+  mb.box(tx+tw/2-0.18,ty+4.27,tz-0.025,tx+tw/2+0.18,ty+4.32,tz+0.025,{l:TL.WHITE,c:C3('#493a2b')},null,0.12);
 }
 function fbox(mb,F,s0,s1,ya,yb,off,mat){const a=F(s0,ya,0),b=F(s1,yb,off);mb.box(Math.min(a[0],b[0]),ya,Math.min(a[2],b[2]),Math.max(a[0],b[0]),yb,Math.max(a[2],b[2]),mat,mat,0.3);}
 function roof4(mb,i0,j0,i1,j1,y,rh,mat){const li=i1-i0,lj=j1-j0;const along=li>=lj;const hw=Math.min(li,lj)/2;
@@ -2292,7 +2360,7 @@ let started=false;
 function prepare(){if(!gl){$('loading').textContent='Ton navigateur ne gère pas la 3D (WebGL2). Mets à jour ton téléphone ou essaie Chrome/Safari récent.';return;}
   resize();load();initGL();ready=true;$('loading').style.display='none';if(unlocked)startGame();}
 setTimeout(()=>{try{prepare();}catch(e){$('loading').textContent='Erreur : '+e.message;console.error(e);}},50);
-function startGame(){if(!ready||started)return;started=true;setTimeout(newsPop,1200);setTimeout(infoAuto,1500);resize();recompute();BLD.forEach(B=>{if(B.meshLv!==B.lvl)buildHouse(B);});buildBillboards();buildGlows();{const H0=HOME;let ti=0,tj=0;WT.forEach(t=>{ti+=t.i;tj+=t.j;});if(WT.length){ti/=WT.length;tj/=WT.length;}else{ti=H0.ci;tj=H0.cj;}CAM0.tx=cam.tx=lerp(H0.ci,ti,0.4);CAM0.tz=cam.tz=lerp(H0.cj,tj,0.4);CAM0.dist=cam.dist=W<H?17:13;}clampCam();updateHud();
+function startGame(){if(!ready||started)return;started=true;setTimeout(newsPop,1200);setTimeout(infoAuto,1500);resize();recompute();BLD.forEach(B=>{if(B.meshLv!==B.lvl)buildHouse(B);});buildBillboards();buildGlows();{const C=CHURCH;CAM0.tx=cam.tx=(C.i0+C.i1)/2+0.5;CAM0.tz=cam.tz=(C.j0+C.j1)/2;CAM0.dist=cam.dist=W<H?8.8:7.6;CAM0.pitch=cam.pitch=34;CAM0.yaw=cam.yaw=yawT=Math.PI/2;}clampCam();updateHud();
   if(!BLD.some(B=>B.owned&&!B.home))setTimeout(()=>toast('Coupe du bois 🪓 pour gagner tes premiers dollars'),900);requestAnimationFrame(t=>{last=t;loop(t);});}
 </script>
 </body>
