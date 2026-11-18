@@ -1815,10 +1815,10 @@ let T3traffic={ready:false,cars:[],peds:[]},T3woodcutter=null;
 function t3Geometry(m,terrain=false){
   if(!m||!m.cpuV||!m.cpuIx)return null;
   const a=m.cpuV,idx=m.cpuIx,st=m.layout.reduce((q,x)=>q+x[1],0),count=a.length/st;
-  const pos=new Float32Array(count*3),nor=new Float32Array(count*3),col=new Float32Array(count*3),uv=new Float32Array(count*2);
-  for(let k=0;k<count;k++){const o=k*st,p=k*3;pos[p]=a[o];pos[p+1]=a[o+1];pos[p+2]=a[o+2];nor[p]=a[o+3];nor[p+1]=a[o+4];nor[p+2]=a[o+5];col[p]=a[o+6];col[p+1]=a[o+7];col[p+2]=a[o+8];uv[k*2]=a[o+10];uv[k*2+1]=a[o+11];}
+  const pos=new Float32Array(count*3),nor=new Float32Array(count*3),col=new Float32Array(count*3),uv=new Float32Array(count*2),weights=terrain?new Float32Array(count*4):null;
+  for(let k=0;k<count;k++){const o=k*st,p=k*3;pos[p]=a[o];pos[p+1]=a[o+1];pos[p+2]=a[o+2];nor[p]=a[o+3];nor[p+1]=a[o+4];nor[p+2]=a[o+5];col[p]=a[o+6];col[p+1]=a[o+7];col[p+2]=a[o+8];uv[k*2]=a[o+10];uv[k*2+1]=a[o+11];if(terrain)for(let q=0;q<4;q++)weights[k*4+q]=a[o+13+q];}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('normal',new THREE.BufferAttribute(nor,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));
-  if(terrain){g.setIndex(idx);g.addGroup(0,idx.length,0);g.computeBoundingSphere();return g;}
+  if(terrain){g.setAttribute('terrainWeights',new THREE.BufferAttribute(weights,4));g.setIndex(idx);g.addGroup(0,idx.length,0);g.computeBoundingSphere();return g;}
   const by=Array.from({length:TEXN},()=>[]);for(let k=0;k<idx.length;k+=3){const lay=clamp(Math.round(a[idx[k]*st+12]),0,TEXN-1);by[lay].push(idx[k],idx[k+1],idx[k+2]);}
   const all=[];for(let l=0;l<TEXN;l++){if(!by[l].length)continue;const start=all.length;all.push(...by[l]);g.addGroup(start,by[l].length,l);}
   g.setIndex(all);g.computeBoundingSphere();return g;
@@ -1948,6 +1948,14 @@ function initThreeRenderer(){
   const tex=[];for(let l=0;l<TEXN;l++){const c=document.createElement('canvas');c.width=TS;c.height=TS;const x=c.getContext('2d'),im=x.createImageData(TS,TS),off=l*TS*TS*4;im.data.set(px.subarray(off,off+TS*TS*4));x.putImageData(im,0,0);const t=new T3.CanvasTexture(c);t.colorSpace=T3.SRGBColorSpace;t.wrapS=t.wrapT=T3.RepeatWrapping;t.anisotropy=Math.min(8,T3renderer.capabilities.getMaxAnisotropy());tex.push(t);}
   T3.materials=tex.map((map)=>new T3.MeshStandardMaterial({map,vertexColors:true,roughness:0.88,metalness:0.0}));
   T3.terrainMat=new T3.MeshStandardMaterial({map:tex[TL.GRASS],vertexColors:true,roughness:1});
+  T3.terrainMat.onBeforeCompile=(shader)=>{
+    shader.uniforms.uSandMap={value:tex[TL.SAND]};shader.uniforms.uRockMap={value:tex[TL.ROCK]};shader.uniforms.uDirtMap={value:tex[TL.DIRT]};
+    shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nattribute vec4 terrainWeights; varying vec4 vTerrainWeights;');
+    shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvTerrainWeights=terrainWeights;');
+    shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nuniform sampler2D uSandMap; uniform sampler2D uRockMap; uniform sampler2D uDirtMap; varying vec4 vTerrainWeights;');
+    shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`vec4 grassTexel=texture2D(map,vMapUv); vec4 sandTexel=texture2D(uSandMap,vMapUv); vec4 rockTexel=texture2D(uRockMap,vMapUv); vec4 dirtTexel=texture2D(uDirtMap,vMapUv); vec4 terrainTexel=grassTexel*vTerrainWeights.x+sandTexel*vTerrainWeights.y+rockTexel*vTerrainWeights.z+dirtTexel*vTerrainWeights.w; diffuseColor*=terrainTexel;`);
+  };
+  T3.terrainMat.customProgramCacheKey=()=>'costa-terrain-blend-v1';
   const staticKeys=['ter','stat','bd','cad','farm'];for(const key of staticKeys){const m=MESH[key];if(!m)continue;const obj=t3MakeMesh(m,key==='ter');if(obj)T3world.add(obj);}
   const sea=t3SimpleWater(MESH.sea,'#4d9eaa',0.78),river=t3SimpleWater(MESH.river,'#64b9bd',0.84);if(sea)T3world.add(sea);if(river)T3world.add(river);
   for(const b of BOATS){if(!b.mesh)continue;const obj=t3MakeMesh(b.mesh,false);if(obj){obj.position.set(b.i||b.ci||0,0,b.j||b.cj||0);obj.rotation.y=b.ry||0;T3world.add(obj);T3boats.push({b,obj});}}
