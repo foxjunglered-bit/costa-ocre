@@ -1640,7 +1640,7 @@ let W=0,H=0,dpr=1,elapsed=0;
 /* ---------------- NOUVEAU RENDU THREE.JS ----------------
    Le monde et sa logique sont conservés, mais le rendu final passe
    par Three.js : matériaux PBR, éclairage physique et ombres douces. */
-let T3=null,T3scene=null,T3camera=null,T3renderer=null,T3world=null,T3buildings=new Map(),T3boats=[],T3sun=null,T3hemi=null,T3fill=null,T3vegGroup=null,T3vegDirty=true,T3farmSource=null,T3farmObj=null;
+let T3=null,T3scene=null,T3camera=null,T3renderer=null,T3world=null,T3buildings=new Map(),T3boats=[],T3sun=null,T3hemi=null,T3fill=null,T3vegGroup=null,T3vegDirty=true,T3farmSource=null,T3farmObj=null,T3selectionHelper=null,T3selectionTarget=null,T3selectionSource=null;
 let T3traffic={ready:false,cars:[],peds:[]},T3woodcutter=null;
 function t3Geometry(m,terrain=false){
   if(!m||!m.cpuV||!m.cpuIx)return null;
@@ -1753,6 +1753,18 @@ function t3RebuildVegetation(){
   }
   T3vegGroup=group;T3vegDirty=false;
 }
+function t3SyncSelection(){
+  const record=sel&&T3buildings.get(sel),source=record?record.obj:null;
+  if(sel===T3selectionTarget&&source===T3selectionSource)return;
+  if(T3selectionHelper){T3world.remove(T3selectionHelper);if(T3selectionHelper.geometry)T3selectionHelper.geometry.dispose();if(T3selectionHelper.material)T3selectionHelper.material.dispose();T3selectionHelper=null;}
+  T3selectionTarget=sel;T3selectionSource=source;
+  if(source){T3selectionHelper=new T3.BoxHelper(source,0x55f28b);T3selectionHelper.material.depthTest=false;T3selectionHelper.material.transparent=true;T3selectionHelper.material.opacity=0.95;T3selectionHelper.renderOrder=999;T3world.add(T3selectionHelper);}
+  else if(sel&&sel.poly&&sel.poly.length>2){
+    const pts=sel.poly.map(p=>new T3.Vector3(p[0],hAt(p[0],p[1])+0.08,p[1]));pts.push(pts[0].clone());
+    const geo=new T3.BufferGeometry().setFromPoints(pts),mat=new T3.LineBasicMaterial({color:0x55f28b,transparent:true,opacity:0.95,depthTest:false});
+    T3selectionHelper=new T3.LineLoop(geo,mat);T3selectionHelper.renderOrder=999;T3world.add(T3selectionHelper);
+  }
+}
 function t3SyncFarm(){
   if(T3farmSource===MESH.farm)return;
   if(T3farmObj){T3world.remove(T3farmObj);T3farmObj.geometry.dispose();T3farmObj=null;}
@@ -1796,7 +1808,7 @@ function initThreeRenderer(){
 }
 function renderThree(){
   if(!T3||!T3.ready)return;
-  updateLight();updateCamera();t3SyncBuildings();t3SyncFarm();if(T3vegDirty)t3RebuildVegetation();t3UpdateTraffic();t3UpdateBoats();t3SyncWoodcutter();
+  updateLight();updateCamera();t3SyncBuildings();t3SyncFarm();t3SyncSelection();if(T3vegDirty)t3RebuildVegetation();t3UpdateTraffic();t3UpdateBoats();t3SyncWoodcutter();
   if(T3sun){T3sun.position.set(-L.sun[0]*65,L.sun[1]*65,-L.sun[2]*65);T3sun.color.setRGB(...L.sunCol);T3sun.intensity=2.65;}
   if(T3hemi){T3hemi.color.setRGB(...L.sky);T3hemi.groundColor.setRGB(...L.gnd);T3hemi.intensity=1.45;}
   if(T3fill){T3fill.intensity=0.18+L.night*0.42;T3fill.color.setRGB(0.58,0.68,0.92);}
